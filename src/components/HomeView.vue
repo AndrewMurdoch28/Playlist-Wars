@@ -17,6 +17,7 @@ const trackList = ref<
 const loading = ref<boolean>(false);
 const form = ref();
 const errorMessage = ref<string | null>(null);
+const editYears = ref<boolean>(false);
 
 const numOfCardsPerPage = 12;
 
@@ -85,7 +86,10 @@ const getRowsBack = (index: number) => {
 };
 
 const printCards = () => {
-  window.print();
+  editYears.value = false;
+  setTimeout(() => {
+    window.print();
+  }, 500);
 };
 
 const required = (value: string) =>
@@ -96,8 +100,13 @@ const required = (value: string) =>
 
 <template>
   <div class="centered">
+    <v-btn
+      @click="editYears = !editYears"
+      style="position: fixed; top: 16px; right: 16px; z-index: 1000"
+      ><v-icon>{{ editYears ? "mdi-eye" : "mdi-pencil" }}</v-icon></v-btn
+    >
     <v-form ref="form">
-      <div style="display: flex; gap: 3px; flex-wrap: wrap;">
+      <div style="display: flex; gap: 3px; flex-wrap: wrap">
         <v-text-field
           v-model="txtValue"
           variant="solo-filled"
@@ -164,41 +173,22 @@ const required = (value: string) =>
               v-for="track in row"
               :style="{ width: cardWidth + 'cm', height: cardHeight + 'cm' }"
             >
-              <p style="font-size: 50px">{{ track.year }}</p>
-              <p><strong>Artist:</strong> {{ track.artist }}</p>
-              <p><strong>Song Name:</strong> {{ track.name }}</p>
+              <v-text-field
+                v-if="editYears"
+                v-model="track.year"
+                label="Release Year"
+                variant="solo-filled"
+                bg-color="#344f91"
+                density="default"
+                style="max-height: 40px; width: 80%; margin-bottom: 30px"
+              ></v-text-field>
+              <p v-if="!editYears" style="font-size: 50px">{{ track.year }}</p>
+              <p><strong>Artist:</strong>{{ track.artist }}</p>
+              <p><strong>Name:</strong> {{ track.name }}</p>
             </div>
           </div>
         </div>
       </template>
-    </div>
-
-    <!-- Special handling for the single track -->
-    <div v-if="trackList.length === 1">
-      <!-- QR Code for the single track -->
-      <div class="print-page">
-        <div class="print-cards">
-          <div class="print-card">
-            <VueQrcode
-              :value="trackList[0].url"
-              :size="150"
-              :color="{ dark: '#000000', light: '#ffffff' }"
-              type="image/png"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Song Details for the single track -->
-      <div class="print-page">
-        <div class="print-cards">
-          <div class="print-card-back">
-            <p style="font-size: 50px">{{ trackList[0].year }}</p>
-            <p><strong>Artist:</strong> {{ trackList[0].artist }}</p>
-            <p><strong>Song Name:</strong> {{ trackList[0].name }}</p>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
