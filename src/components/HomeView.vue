@@ -18,6 +18,8 @@ const loading = ref<boolean>(false);
 const form = ref();
 const errorMessage = ref<string | null>(null);
 
+const numOfCardsPerPage = 12;
+
 const getSpotifyToken = async () => {
   const response = await axios.post(
     "https://accounts.spotify.com/api/token",
@@ -62,7 +64,7 @@ const fetchPlaylistTracks = async () => {
 
 const getRowsFront = (index: number) => {
   let chunks = [];
-  for (let i = index; i < index + 9; i += 3) {
+  for (let i = index; i < index + numOfCardsPerPage; i += 3) {
     const chunk = trackList.value.slice(i, i + 3);
     chunks.push(chunk);
   }
@@ -71,7 +73,7 @@ const getRowsFront = (index: number) => {
 
 const getRowsBack = (index: number) => {
   let chunks = [];
-  for (let i = index; i < index + 9; i += 3) {
+  for (let i = index; i < index + numOfCardsPerPage; i += 3) {
     const chunk = trackList.value.slice(i, i + 3);
     chunks.push(chunk.reverse());
   }
@@ -114,7 +116,7 @@ const required = (value: string) =>
     <!-- Front Side: QR Code for each track (with 9 tracks per page) -->
     <div v-if="trackList.length > 1">
       <template v-for="(track, index) in trackList" :key="track.url">
-        <div v-if="index % 9 === 0" class="print-page">
+        <div v-if="index % numOfCardsPerPage === 0" class="print-page">
           <div class="print-rows-front" v-for="row in getRowsFront(index)">
             <div class="print-card" v-for="track in row">
               <VueQrcode
@@ -128,7 +130,7 @@ const required = (value: string) =>
         </div>
 
         <!-- Back Side: Song Details for each track (with 9 tracks per page) -->
-        <div v-if="index % 9 === 0" class="print-page">
+        <div v-if="index % numOfCardsPerPage === 0" class="print-page">
           <div class="print-rows-back" v-for="row in getRowsBack(index)">
             <div class="print-card" v-for="track in row">
               <p style="font-size: 50px">{{ track.year }}</p>
@@ -204,7 +206,7 @@ const required = (value: string) =>
 
 .print-card {
   width: 6cm;
-  height: 7cm;
+  height: 5.5cm;
   margin: 10px;
   border: 1px solid black;
   display: flex;
@@ -226,27 +228,9 @@ const required = (value: string) =>
     display: none; /* Hide buttons when printing */
   }
 
-  .print-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
   /* Page break logic */
   .print-page {
     page-break-before: always; /* Forces page break between odd/even pages */
-  }
-
-  .print-card {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .print-card-back {
-    display: flex;
-    justify-content: center;
-    align-items: center;
   }
 }
 </style>
