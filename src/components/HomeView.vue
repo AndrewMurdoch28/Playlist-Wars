@@ -20,6 +20,10 @@ const errorMessage = ref<string | null>(null);
 
 const numOfCardsPerPage = 12;
 
+// Dynamic width and height
+const cardWidth = ref<number>(6); // Default width in cm
+const cardHeight = ref<number>(6); // Default height in cm
+
 const getSpotifyToken = async () => {
   const response = await axios.post(
     "https://accounts.spotify.com/api/token",
@@ -93,17 +97,36 @@ const required = (value: string) =>
 <template>
   <div class="centered">
     <v-form ref="form">
-      <v-text-field
-        v-model="txtValue"
-        variant="solo-filled"
-        label="Link To Spotify Playlist"
-        :rules="[required]"
-        :error="!!errorMessage"
-        :error-messages="errorMessage"
-        style="width: 100vw; max-width: 800px"
-        clearable
-      ></v-text-field>
+      <div style="display: flex; gap: 3px; flex-wrap: wrap;">
+        <v-text-field
+          v-model="txtValue"
+          variant="solo-filled"
+          label="Link To Spotify Playlist"
+          :rules="[required]"
+          :error="!!errorMessage"
+          :error-messages="errorMessage"
+          style="width: 100vw; max-width: 800px"
+          clearable
+        ></v-text-field>
+        <v-text-field
+          v-model="cardWidth"
+          variant="solo-filled"
+          label="Card Width (cm)"
+          type="number"
+          min="1"
+          :error="false"
+        ></v-text-field>
+        <v-text-field
+          v-model="cardHeight"
+          variant="solo-filled"
+          label="Card Height (cm)"
+          type="number"
+          min="1"
+          :error="false"
+        ></v-text-field>
+      </div>
     </v-form>
+
     <v-btn :loading="loading" @click="fetchPlaylistTracks">
       Generate Cards
     </v-btn>
@@ -118,7 +141,11 @@ const required = (value: string) =>
       <template v-for="(track, index) in trackList" :key="track.url">
         <div v-if="index % numOfCardsPerPage === 0" class="print-page">
           <div class="print-rows-front" v-for="row in getRowsFront(index)">
-            <div class="print-card" v-for="track in row">
+            <div
+              class="print-card"
+              v-for="track in row"
+              :style="{ width: cardWidth + 'cm', height: cardHeight + 'cm' }"
+            >
               <VueQrcode
                 :value="track.url"
                 :size="150"
@@ -132,7 +159,11 @@ const required = (value: string) =>
         <!-- Back Side: Song Details for each track (with 9 tracks per page) -->
         <div v-if="index % numOfCardsPerPage === 0" class="print-page">
           <div class="print-rows-back" v-for="row in getRowsBack(index)">
-            <div class="print-card" v-for="track in row">
+            <div
+              class="print-card"
+              v-for="track in row"
+              :style="{ width: cardWidth + 'cm', height: cardHeight + 'cm' }"
+            >
               <p style="font-size: 50px">{{ track.year }}</p>
               <p><strong>Artist:</strong> {{ track.artist }}</p>
               <p><strong>Song Name:</strong> {{ track.name }}</p>
@@ -205,8 +236,6 @@ const required = (value: string) =>
 }
 
 .print-card {
-  width: 6.48cm;
-  height: 6.48cm;
   margin: 0px;
   border: 1px solid black;
   display: flex;
