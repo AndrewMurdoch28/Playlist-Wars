@@ -205,9 +205,9 @@ const required = (value: string) =>
 }
 
 .print-card {
-  width: 6cm;
-  height: 5.5cm;
-  margin: 10px;
+  width: 6.48cm;
+  height: 6.48cm;
+  margin: 0px;
   border: 1px solid black;
   display: flex;
   flex-direction: column;
