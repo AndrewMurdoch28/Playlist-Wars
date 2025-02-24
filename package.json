@@ -1,0 +1,30 @@
+{
+  "name": "hitster-generator",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "serve": "vite preview",
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "roboto-fontface": "*",
+    "vue": "^3.5.13",
+    "vuetify": "^3.0.0-beta.0",
+    "webfontloader": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/webfontloader": "^1.0.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/tsconfig": "^0.7.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.1.0",
+    "vite-plugin-vuetify": "^2.1.0",
+    "vue-cli-plugin-vuetify": "~2.5.8",
+    "vue-tsc": "^2.2.4",
+    "vuetify": "^3.7.13"
+  },
+  "type": "module"
+}
