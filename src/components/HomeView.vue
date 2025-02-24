@@ -67,6 +67,17 @@ const fetchPlaylistTracks = async () => {
   }
 };
 
+const getSongYearUrl = (track: { artist: string; name: string }) => {
+  const query = encodeURIComponent(
+    `${track.name} By ${track.artist} release year`
+  );
+  return `https://www.google.com/search?q=${query}`;
+};
+
+const searchSongYear = (track: { artist: string; name: string }) => {
+  window.open(getSongYearUrl(track), "_blank");
+};
+
 const getRowsFront = (index: number) => {
   let chunks = [];
   for (let i = index; i < index + numOfCardsPerPage; i += 3) {
@@ -173,9 +184,19 @@ const required = (value: string) =>
               v-for="track in row"
               :style="{ width: cardWidth + 'cm', height: cardHeight + 'cm' }"
             >
+              <v-btn
+                color="#344f91"
+                class="hide-print"
+                icon
+                small
+                @click="searchSongYear(track)"
+              >
+                <v-icon>mdi-magnify</v-icon>
+              </v-btn>
               <v-text-field
                 v-if="editYears"
                 v-model="track.year"
+                class="hide-print"
                 label="Release Year"
                 variant="solo-filled"
                 bg-color="#344f91"
@@ -240,6 +261,10 @@ const required = (value: string) =>
 @media print {
   body {
     background: white;
+  }
+
+  .hide-print {
+    display: none !important;
   }
 
   .centered,
