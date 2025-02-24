@@ -5,9 +5,7 @@ import VueQrcode from "vue-qrcode";
 
 const spotifyClientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const spotifySecret = import.meta.env.VITE_SPOTIFY_SECRET;
-const txtValue = ref<string>(
-  "https://open.spotify.com/playlist/0MrGrlVCnz5hH8qgSMb8Rq?trackId=39q7xibBdRboeMKUbZEB6g"
-);
+const txtValue = ref<string>("");
 const trackList = ref<
   {
     artist: string;
@@ -68,7 +66,6 @@ const getRowsFront = (index: number) => {
     const chunk = trackList.value.slice(i, i + 3);
     chunks.push(chunk);
   }
-  console.log(chunks);
   return chunks;
 };
 
@@ -78,7 +75,6 @@ const getRowsBack = (index: number) => {
     const chunk = trackList.value.slice(i, i + 3);
     chunks.push(chunk.reverse());
   }
-  console.log(chunks);
   return chunks;
 };
 
