@@ -5,7 +5,9 @@ import VueQrcode from "vue-qrcode";
 
 const spotifyClientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const spotifySecret = import.meta.env.VITE_SPOTIFY_SECRET;
-const txtValue = ref<string>("");
+const txtValue = ref<string>(
+  "https://open.spotify.com/playlist/34a5t3nXM8SpKCCezRM5EH?si=aa034ba408e54344"
+);
 const trackList = ref<
   {
     artist: string;
@@ -22,8 +24,8 @@ const editYears = ref<boolean>(false);
 const numOfCardsPerPage = 12;
 
 // Dynamic width and height
-const cardWidth = ref<number>(6); // Default width in cm
-const cardHeight = ref<number>(6); // Default height in cm
+const cardWidth = ref<string>("6"); // Default width in cm
+const cardHeight = ref<string>("6"); // Default height in cm
 
 const getSpotifyToken = async () => {
   const response = await axios.post(
@@ -110,106 +112,122 @@ const required = (value: string) =>
 </script>
 
 <template>
-  <div class="centered">
-    <v-btn
-      @click="editYears = !editYears"
-      style="position: fixed; top: 16px; right: 16px; z-index: 1000"
-      ><v-icon>{{ editYears ? "mdi-eye" : "mdi-pencil" }}</v-icon></v-btn
-    >
-    <v-form ref="form">
-      <div style="display: flex; gap: 3px; flex-wrap: wrap">
-        <v-text-field
-          v-model="txtValue"
-          variant="solo-filled"
-          label="Link To Spotify Playlist"
-          :rules="[required]"
-          :error="!!errorMessage"
-          :error-messages="errorMessage"
-          style="width: 100vw; max-width: 800px"
-          clearable
-        ></v-text-field>
-        <v-text-field
-          v-model="cardWidth"
-          variant="solo-filled"
-          label="Card Width (cm)"
-          type="number"
-          min="1"
-          :error="false"
-        ></v-text-field>
-        <v-text-field
-          v-model="cardHeight"
-          variant="solo-filled"
-          label="Card Height (cm)"
-          type="number"
-          min="1"
-          :error="false"
-        ></v-text-field>
-      </div>
-    </v-form>
-
-    <v-btn :loading="loading" @click="fetchPlaylistTracks">
-      Generate Cards
-    </v-btn>
-    <v-btn :disabled="trackList.length === 0" @click="printCards" color="blue">
-      Print Cards
-    </v-btn>
-  </div>
-
-  <div class="print-container">
-    <!-- Front Side: QR Code for each track (with 9 tracks per page) -->
-    <div v-if="trackList.length > 1">
-      <template v-for="(track, index) in trackList" :key="track.url">
-        <div v-if="index % numOfCardsPerPage === 0" class="print-page">
-          <div class="print-rows-front" v-for="row in getRowsFront(index)">
-            <div
-              class="print-card"
-              v-for="track in row"
-              :style="{ width: cardWidth + 'cm', height: cardHeight + 'cm' }"
-            >
-              <VueQrcode
-                :value="track.url"
-                :size="150"
-                :color="{ dark: '#000000', light: '#ffffff' }"
-                type="image/png"
-              />
-            </div>
-          </div>
+  <v-btn
+    @click="editYears = !editYears"
+    color="#344f91"
+    class="hide-print"
+    style="
+      position: fixed;
+      top: 50%;
+      left: 3px;
+      transform: translateY(-50%);
+      z-index: 1000;
+    "
+    ><v-icon>{{ editYears ? "mdi-eye" : "mdi-pencil" }}</v-icon></v-btn
+  >
+  <div>
+    <div class="centered">
+      <v-form ref="form">
+        <div style="display: flex; gap: 3px; flex-wrap: wrap">
+          <v-text-field
+            v-model="txtValue"
+            variant="solo-filled"
+            label="Link To Spotify Playlist"
+            :rules="[required]"
+            :error="!!errorMessage"
+            :error-messages="errorMessage"
+            style="width: 100vw; max-width: 800px"
+            clearable
+          ></v-text-field>
+          <v-text-field
+            v-model="cardWidth"
+            variant="solo-filled"
+            label="Card Width (cm)"
+            type="number"
+            min="1"
+            :error="false"
+          ></v-text-field>
+          <v-text-field
+            v-model="cardHeight"
+            variant="solo-filled"
+            label="Card Height (cm)"
+            type="number"
+            min="1"
+            :error="false"
+          ></v-text-field>
         </div>
+      </v-form>
 
-        <!-- Back Side: Song Details for each track (with 9 tracks per page) -->
-        <div v-if="index % numOfCardsPerPage === 0" class="print-page">
-          <div class="print-rows-back" v-for="row in getRowsBack(index)">
-            <div
-              class="print-card"
-              v-for="track in row"
-              :style="{ width: cardWidth + 'cm', height: cardHeight + 'cm' }"
-            >
-              <v-btn
-                color="#344f91"
-                class="hide-print"
-                icon
-                small
-                @click="searchSongYear(track)"
+      <v-btn :loading="loading" @click="fetchPlaylistTracks">
+        Generate Cards
+      </v-btn>
+      <v-btn
+        :disabled="trackList.length === 0"
+        @click="printCards"
+        color="blue"
+      >
+        Print Cards
+      </v-btn>
+    </div>
+
+    <div class="print-container">
+      <!-- Front Side: QR Code for each track (with 9 tracks per page) -->
+      <div v-if="trackList.length > 1">
+        <template v-for="(track, index) in trackList" :key="track.url">
+          <div v-if="index % numOfCardsPerPage === 0" class="print-page">
+            <div class="print-rows-front" v-for="row in getRowsFront(index)">
+              <div
+                class="print-card"
+                v-for="track in row"
+                :style="{ width: cardWidth + 'cm', height: cardHeight + 'cm' }"
               >
-                <v-icon>mdi-magnify</v-icon>
-              </v-btn>
-              <v-text-field
-                v-if="editYears"
-                v-model="track.year"
-                class="hide-print"
-                label="Release Year"
-                variant="solo-filled"
-                bg-color="#344f91"
-                density="default"
-                style="max-height: 40px; width: 80%; margin-bottom: 30px"
-              ></v-text-field>
-              <p v-if="!editYears" style="font-size: 50px">{{ track.year }}</p>
-              <p><strong>Artist:</strong>{{ track.artist }}</p>
-              <p><strong>Name:</strong> {{ track.name }}</p>
+                <VueQrcode
+                  :value="track.url"
+                  :size="150"
+                  :color="{ dark: '#000000', light: '#ffffff' }"
+                  type="image/png"
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </template>
+
+          <!-- Back Side: Song Details for each track (with 9 tracks per page) -->
+          <div v-if="index % numOfCardsPerPage === 0" class="print-page">
+            <div class="print-rows-back" v-for="row in getRowsBack(index)">
+              <div
+                class="print-card"
+                v-for="track in row"
+                :style="{ width: cardWidth + 'cm', height: cardHeight + 'cm' }"
+              >
+                <v-btn
+                  color="#344f91"
+                  class="hide-print"
+                  icon
+                  small
+                  @click="searchSongYear(track)"
+                >
+                  <v-icon>mdi-magnify</v-icon>
+                </v-btn>
+                <v-text-field
+                  v-if="editYears"
+                  v-model="track.year"
+                  class="hide-print"
+                  label="Release Year"
+                  variant="solo-filled"
+                  bg-color="#344f91"
+                  density="default"
+                  style="max-height: 40px; width: 80%; margin-bottom: 30px"
+                ></v-text-field>
+                <p v-if="!editYears" style="font-size: 50px">
+                  {{ track.year }}
+                </p>
+                <p><strong>Artist:</strong>{{ track.artist }}</p>
+                <p><strong>Name:</strong> {{ track.name }}</p>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -222,11 +240,13 @@ const required = (value: string) =>
   justify-content: center;
   align-items: center;
   margin-top: 50px;
+  margin-bottom: 5px;
   gap: 5px;
 }
 
 /* Printable card container */
 .print-container {
+  width: max-content;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
