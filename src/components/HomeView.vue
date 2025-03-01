@@ -5,9 +5,7 @@ import VueQrcode from "vue-qrcode";
 
 const spotifyClientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const spotifySecret = import.meta.env.VITE_SPOTIFY_SECRET;
-const txtValue = ref<string>(
-  "https://open.spotify.com/playlist/34a5t3nXM8SpKCCezRM5EH?si=aa034ba408e54344"
-);
+const txtValue = ref<string>("");
 const trackList = ref<
   {
     artist: string;
@@ -246,7 +244,7 @@ const required = (value: string) =>
 
 /* Printable card container */
 .print-container {
-  width: max-content;
+  width: min-content;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
