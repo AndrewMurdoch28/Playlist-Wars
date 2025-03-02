@@ -17,26 +17,11 @@ export default defineConfig({
   define: {
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false, // Disable Vue hydration warnings
   },
-  // resolve: {
-  //   alias: {
-  //     "@commons": fileURLToPath(new URL("../commons", import.meta.url)),
-  //     "@core": fileURLToPath(new URL("./src/@core", import.meta.url)),
-  //     "@layouts": fileURLToPath(new URL("./src/@layouts", import.meta.url)),
-  //     "@api": fileURLToPath(new URL("./src/api", import.meta.url)),
-  //     "@assets": fileURLToPath(new URL("./src/assets", import.meta.url)),
-  //     "@components": fileURLToPath(new URL("./src/components", import.meta.url)),
-  //     "@composables": fileURLToPath(new URL("./src/composables", import.meta.url)),
-  //     "@interfaces": fileURLToPath(new URL("./src/interfaces", import.meta.url)),
-  //     "@router": fileURLToPath(new URL("./src/router", import.meta.url)),
-  //     "@stores": fileURLToPath(new URL("./src/stores", import.meta.url)),
-  //     "@views": fileURLToPath(new URL("./src/views", import.meta.url)),
-
-  //     "@styles": fileURLToPath(new URL("./src/assets/styles/", import.meta.url)),
-  //     "@configured-variables": fileURLToPath(new URL("./src/assets/styles/variables/_template.scss", import.meta.url)),
-  //     "@themeConfig": fileURLToPath(new URL("./themeConfig.ts", import.meta.url)),
-  //   },
-  //   extensions: [".js", ".json", ".jsx", ".mjs", ".ts", ".tsx", ".vue"],
-  // },
+  resolve: {
+    alias: {
+    },
+    extensions: [".js", ".json", ".jsx", ".mjs", ".ts", ".tsx", ".vue"],
+  },
   server: {
     cors: true,
     port: 3000,

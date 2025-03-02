@@ -1,13 +1,12 @@
 <template>
   <v-app>
     <v-main>
-      <HomeView />
+      <router-view />
     </v-main>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import HomeView from './components/HomeView.vue';
 </script>
 
 <style>
