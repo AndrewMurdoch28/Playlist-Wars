@@ -1,30 +1,43 @@
 import { generateRandomString } from "../lib/utils";
 
 class GameDatabase {
-  private games: Map<string, Game>;
+  private games: { [key: string]: Game };
 
   constructor() {
-    this.games = new Map<string, Game>();
+    this.games = {};
   }
 
   set(key: string, value: Game) {
-    this.games.set(key, value);
+    this.games[key] = value;
   }
 
   get(key: string) {
-    return this.games.get(key);
+    return this.games[key] || null;
   }
 
   delete(key: string) {
-    return this.games.delete(key);
+    if (key in this.games) {
+      delete this.games[key];
+      return true;
+    }
+    return false;
   }
 
   getAll() {
-    return Object.fromEntries(this.games);
+    return { ...this.games };
   }
 
   clear() {
-    this.games.clear();
+    this.games = {};
+  }
+
+  getGameForPlayer(playerId: string) {
+    for (const game of Object.values(this.games)) {
+      if (game.players[playerId]) {
+        return game;
+      }
+    }
+    return false;
   }
 }
 
@@ -32,13 +45,50 @@ export const gameDatabase = new GameDatabase();
 
 export class Game {
   id: string;
-  players: Map<string, string>;
-  track: Track[];
+  players: { [key: string]: Player };
+  tracks: Track[];
 
   constructor() {
     this.id = generateRandomString(5);
-    this.players = new Map<string, string>();
-    this.track = [];
+    this.players = {};
+    this.tracks = [];
+  }
+
+  updateGame(data: Partial<this>) {
+    if (data.players) {
+      Object.assign(this.players, data.players);
+    }
+    if (data.tracks) {
+      this.tracks = data.tracks;
+    }
+  }
+
+  addPlayer(playerId: string, playerData: Player) {
+    if (!this.players[playerId]) this.players[playerId] = playerData;
+  }
+
+  removePlayer(playerId: string) {
+    delete this.players[playerId];
+  }
+
+  playerConnection(playerId: string, value: boolean) {
+    if (this.players[playerId]) {
+      this.players[playerId].connected = value;
+    }
+  }
+}
+
+export class Player {
+  id: string;
+  connected: boolean;
+  name: string;
+  timeline: { [key: string]: Track[] };
+
+  constructor(id: string, name: string) {
+    this.id = id;
+    this.connected = false;
+    this.name = name;
+    this.timeline = {};
   }
 }
 

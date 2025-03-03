@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npx tsc && npx tsc-alias",
-    "dev": "npm run build && concurrently \"npx tsc --watch --preserveWatchOutput\" \"nodemon -q -e ts,js --exec ts-node -r tsconfig-paths/register dist/index.js\"",
+    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q --watch dist -e js --exec ts-node -r tsconfig-paths/register dist/index.js\"",
     "start": "node dist/index.js"
   },
   "keywords": [],

@@ -4,6 +4,7 @@ import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import gameRouter from "./routers/game.router";
+import { SocketWrapper } from "./sockets/socketWrapper";
 
 dotenv.config();
 
@@ -17,10 +18,12 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     credentials: true,
   },
 });
+
+export const socketWrapper = new SocketWrapper(io);
 
 app.use(
   cors({
@@ -36,19 +39,6 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/game", gameRouter);
-
-io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
-
-  socket.on("message", (data) => {
-    console.log("Received message:", data);
-    io.emit("message", data);
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.id}`);
-  });
-});
 
 // Start the server
 server.listen(PORT, () => {

@@ -3,8 +3,8 @@ import gameService from "../services/game.service";
 
 const controller = {
   create: (req: Request, res: Response) => {
-    gameService.create();
-    res.status(200).send();
+    const newGame = gameService.create();
+    res.status(200).send(newGame);
   },
 };
 

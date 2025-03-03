@@ -4,7 +4,7 @@ const service = {
   create: () => {
     const newGame = new Game();
     gameDatabase.set(newGame.id, newGame);
-    return newGame;
+    return newGame.getObject();
   },
 };
 

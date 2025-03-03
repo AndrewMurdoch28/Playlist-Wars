@@ -3,6 +3,6 @@ import gameController from "../controllers/game.controller";
 
 const router = Router();
 
-router.post("/lobby", gameController.create);
+router.post("/create", gameController.create);
 
 export default router;
