@@ -13,13 +13,14 @@ const router = useRouter();
       </v-card-text>
       <v-divider class="my-4"></v-divider>
       <v-btn 
+        :disabled="true"
         block 
         color="primary" 
         size="large" 
         class="mb-3" 
         @click="router.push('/game/menu')"
       >
-        🎵 Play Game
+        🎵 Play Game (In Developement)
       </v-btn>
       <v-btn 
         block 
