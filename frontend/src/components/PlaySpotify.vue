@@ -45,12 +45,11 @@
           >
             <template v-slot:append>
               <span
-                >{{ formatTime(currentTime) }} /
-                {{ formatTime(duration) }}</span
+                >{{ formatTime(currentTime) }}/{{ formatTime(duration) }}</span
               >
             </template>
           </v-slider>
-          <v-btn-group class="ml-1" justify="center">
+          <v-btn-group v-if="hideDetails" class="ml-1" justify="center">
             <v-btn icon color="card" @click="spotifyStore.player?.togglePlay()">
               <v-icon>
                 {{ spotifyStore.isPaused ? "mdi-play" : "mdi-pause" }}

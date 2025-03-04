@@ -22,9 +22,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL!;
 const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || "3001", 10);
 
-const allowedOrigins: string[] = FRONTEND_URL
-  ? [FRONTEND_URL]
-  : [];
+const allowedOrigins: string[] = FRONTEND_URL ? [FRONTEND_URL] : [];
 
 const server = http.createServer(app);
 
@@ -50,74 +48,60 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-app.get('/login', (req, res) => {
-
-  var scope = "streaming user-read-email user-read-private"
-  var state = generateRandomString(16);
-
-  var auth_query_parameters = new URLSearchParams({
+/**
+ * SPOTIFY_REDIRECT_URI gets an illegal redirect_uri error when putting the callback route inside a router file
+ */
+app.get("/auth/login", (req, res) => {
+  const scope = "streaming user-read-email user-read-private";
+  const state = generateRandomString(16);
+  const authQueryParameters = new URLSearchParams({
     response_type: "code",
     client_id: SPOTIFY_CLIENT_ID,
     scope: scope,
     redirect_uri: SPOTIFY_REDIRECT_URI,
-    state: state
-  })
+    state: state,
+  });
+  res.redirect(
+    "https://accounts.spotify.com/authorize/?" + authQueryParameters.toString()
+  );
+});
 
-  res.redirect('https://accounts.spotify.com/authorize/?' + auth_query_parameters.toString());
-})
-
-app.get(
-  "/callback",
-  async (req: express.Request, res: express.Response): Promise<void> => {
-    const code = req.query.code as string;
-
-    try {
-      const response = await axios.post(
-        "https://accounts.spotify.com/api/token",
-        qs.stringify({
-          code,
-          redirect_uri: SPOTIFY_REDIRECT_URI,
-          grant_type: "authorization_code",
-        }),
-        {
-          headers: {
-            Authorization: `Basic ${Buffer.from(
-              `${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`
-            ).toString("base64")}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
-
-      res.cookie("access_token", response.data.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3600 * 1000,
-      });
-
-      res.cookie("refresh_token", response.data.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 30 * 24 * 3600 * 1000,
-      });
-
-      res.redirect(`${FRONTEND_URL}/game/menu`);
-    } catch (error) {
-      console.error("Error exchanging code:", error);
-      res.status(500).send("Error getting token");
-    }
+app.get("/auth/callback", async (req: Request, res: Response) => {
+  const code = req.query.code as string;
+  try {
+    const response = await axios.post(
+      "https://accounts.spotify.com/api/token",
+      qs.stringify({
+        code,
+        redirect_uri: SPOTIFY_REDIRECT_URI,
+        grant_type: "authorization_code",
+      }),
+      {
+        headers: {
+          Authorization: `Basic ${Buffer.from(
+            `${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`
+          ).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+    res.cookie("access_token", response.data.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 3600 * 1000,
+    });
+    res.cookie("refresh_token", response.data.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 30 * 24 * 3600 * 1000,
+    });
+    res.redirect(`${FRONTEND_URL}/game/menu`);
+  } catch (error) {
+    console.error("Error exchanging code:", error);
+    res.status(500).send("Error getting token");
   }
-);
-
-app.get("/token", (req: Request, res: Response) => {
-  const accessToken = req.cookies["access_token"];
-  if (!accessToken) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  res.json({ access_token: accessToken });
 });
 
 app.get("/", (req: Request, res: Response) => {

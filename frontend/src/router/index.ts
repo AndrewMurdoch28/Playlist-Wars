@@ -5,7 +5,7 @@ const routes = [
   {
     path: "/login",
     component: () => {
-      window.location.href = `${import.meta.env.VITE_BACKEND_URL}/login`;
+      window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/login`;
     },
   },
   {

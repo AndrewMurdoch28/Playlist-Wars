@@ -11,64 +11,6 @@ const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI!;
 const FRONTEND_URL = process.env.FRONTEND_URL!;
 
 const controller = {
-  login: (req: Request, res: Response) => {
-    const scope = "streaming user-read-email user-read-private";
-    const state = generateRandomString(16);
-
-    var auth_query_parameters = new URLSearchParams({
-      response_type: "code",
-      client_id: SPOTIFY_CLIENT_ID,
-      scope: scope,
-      redirect_uri: SPOTIFY_REDIRECT_URI,
-      state: state,
-    });
-
-    res.redirect(
-      "https://accounts.spotify.com/authorize/?" +
-        auth_query_parameters.toString()
-    );
-  },
-  callback: async (req: Request, res: Response): Promise<void> => {
-    const code = req.query.code as string;
-
-    try {
-      const response = await axios.post(
-        "https://accounts.spotify.com/api/token",
-        qs.stringify({
-          code,
-          redirect_uri: SPOTIFY_REDIRECT_URI,
-          grant_type: "authorization_code",
-        }),
-        {
-          headers: {
-            Authorization: `Basic ${Buffer.from(
-              `${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`
-            ).toString("base64")}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
-
-      res.cookie("access_token", response.data.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3600 * 1000,
-      });
-
-      res.cookie("refresh_token", response.data.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 30 * 24 * 3600 * 1000,
-      });
-
-      res.redirect(`${FRONTEND_URL}/game/menu`);
-    } catch (error) {
-      console.error("Error exchanging code:", error);
-      res.status(500).send("Error getting token");
-    }
-  },
   getToken: (req: Request, res: Response) => {
     const accessToken = req.cookies["access_token"];
     if (!accessToken) {
