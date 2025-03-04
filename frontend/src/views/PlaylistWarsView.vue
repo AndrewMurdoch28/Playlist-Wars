@@ -20,7 +20,7 @@ const create = async () => {
   >
     <v-card color="card" class="pa-6 text-center" elevation="10" max-width="400">
       <v-btn
-        style="position: absolute; top: 5px; left: 0px"
+        style="position: absolute; top: 0px; left: 0px"
         variant="plain"
         @click="router.push('/')"
       >

@@ -80,44 +80,38 @@ const controller = {
   getPlaylists: async (req: Request, res: Response) => {
     const accessToken = req.cookies["access_token"];
     if (!accessToken) {
-      return res.status(401).json({ success: false, error: "Unauthorized" });
+      res.status(401).json({ success: false, error: "Unauthorized" });
+      return;
     }
-
     const playlistURLs: string[] = req.body.playlistURLs;
     if (!Array.isArray(playlistURLs) || playlistURLs.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Invalid playlist URLs" });
+      res.status(400).json({ success: false, error: "Invalid playlist URLs" });
+      return;
     }
-
     let index = 0;
     try {
       const trackList: Track[] = [];
       const playlistIds = playlistURLs.map(
         (url) => url.split("/").pop()?.split("?")[0]
       );
-
       for (const playlistId of playlistIds) {
         const { data } = await axios.get(
           `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
-
         const tracks = data.items.map((item: any) => ({
           artist: item.track.artists.map((a: any) => a.name).join(", "),
           name: item.track.name,
           releaseYear: item.track.album.release_date.split("-")[0],
           url: item.track.external_urls.spotify,
         }));
-
         trackList.push(...tracks);
         index++;
       }
-
-      return res.json({ success: true, trackList, failedAtIndex: null });
+      res.json({ success: true, trackList, failedAtIndex: null });
     } catch (error) {
       console.error("Error fetching playlists:", error);
-      return res
+      res
         .status(500)
         .json({ success: false, trackList: [], failedAtIndex: index });
     }

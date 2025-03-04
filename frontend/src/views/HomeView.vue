@@ -1,9 +1,17 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { useRouter } from "vue-router";
+
+const loading = ref<boolean>(false);
 
 const router = useRouter();
 
 const env = import.meta.env.VITE_ENV;
+
+const playGame = () => {
+  loading.value = true;
+  router.push("/login");
+};
 </script>
 
 <template>
@@ -24,12 +32,13 @@ const env = import.meta.env.VITE_ENV;
       </v-card-text>
       <v-divider class="my-4"></v-divider>
       <v-btn
+        :loading="loading"
         :disabled="env !== 'localhost'"
         block
         color="primary"
         size="large"
         class="mb-3"
-        @click="router.push('/login')"
+        @click="playGame"
       >
         🎵 Play Game (In Developement)
       </v-btn>

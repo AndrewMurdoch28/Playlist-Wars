@@ -111,11 +111,15 @@ const spotifyStore = useSpotifyStore();
 const currentTime = ref(0);
 const duration = ref(0);
 const volume = ref(0.1);
-let interval: number | null = null;
+let interval: NodeJS.Timeout;
 
 onMounted(() => {
   window.onSpotifyWebPlaybackSDKReady = () => {
-    spotifyStore.getAccessToken().then((access_token: string | undefined) => {
+    spotifyStore.readAccessToken().then((access_token: string | undefined) => {
+      if (!access_token) {
+        console.error("Undefined Access Token");
+        return;
+      }
       const player = new window.Spotify.Player({
         name: "Web Playback SDK",
         getOAuthToken: (cb) => cb(access_token),
@@ -125,7 +129,7 @@ onMounted(() => {
       spotifyStore.setPlayer(player);
 
       player.addListener("ready", ({ device_id }) => {
-        spotifyStore.device_id = device_id;
+        spotifyStore.deviceId = device_id;
         console.log("Ready with Device ID", device_id);
       });
 
