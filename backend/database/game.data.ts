@@ -1,38 +1,34 @@
 import { generateRandomString } from "../lib/utils";
 
-class GameDatabase {
-  private games: { [key: string]: Game };
+export class GameDatabase {
+  private games: Map<string, Game>;
 
   constructor() {
-    this.games = {};
+    this.games = new Map();
   }
 
   set(key: string, value: Game) {
-    this.games[key] = value;
+    this.games.set(key, value);
   }
 
   get(key: string) {
-    return this.games[key] || null;
+    return this.games.get(key) || null;
   }
 
   delete(key: string) {
-    if (key in this.games) {
-      delete this.games[key];
-      return true;
-    }
-    return false;
+    return this.games.delete(key);
   }
 
   getAll() {
-    return { ...this.games };
+    return new Map(this.games);
   }
 
   clear() {
-    this.games = {};
+    this.games.clear();
   }
 
   getGameForPlayer(playerId: string) {
-    for (const game of Object.values(this.games)) {
+    for (const game of this.games.values()) {
       if (game.players[playerId]) {
         return game;
       }
@@ -41,30 +37,43 @@ class GameDatabase {
   }
 }
 
-export const gameDatabase = new GameDatabase();
+export enum TurnState {
+  PlaceTimelineEntry = "PlaceTimelineEntry",
+  PlaceTokens = "PlaceTokens",
+  GuessSong = "GuessSong",
+}
 
 export class Game {
   id: string;
   players: { [key: string]: Player };
+  playlists: string[];
   tracks: Track[];
+  started: boolean;
+  currentTurn: Player | null;
+  turnState: TurnState;
+  activeTimelineEntry: TimelineEntry | null;
 
   constructor() {
     this.id = generateRandomString(5);
     this.players = {};
+    this.playlists = [];
     this.tracks = [];
+    this.started = false;
+    this.currentTurn = null;
+    this.turnState = TurnState.PlaceTimelineEntry;
+    this.activeTimelineEntry = null;
   }
 
   updateGame(data: Partial<this>) {
-    if (data.players) {
-      Object.assign(this.players, data.players);
-    }
-    if (data.tracks) {
-      this.tracks = data.tracks;
-    }
+    Object.assign(this, data);
   }
 
   addPlayer(playerId: string, playerData: Player) {
     if (!this.players[playerId]) this.players[playerId] = playerData;
+  }
+
+  getPlayer(playerId: string) {
+    return this.players[playerId];
   }
 
   removePlayer(playerId: string) {
@@ -82,13 +91,37 @@ export class Player {
   id: string;
   connected: boolean;
   name: string;
-  timeline: { [key: string]: Track[] };
+  turnOrder: number;
+  timeline: TimelineEntry[];
+  timelineTokens: Token[];
+  tokens: number;
 
-  constructor(id: string, name: string) {
+  constructor(id: string, name: string, turnOrder: number) {
     this.id = id;
     this.connected = false;
+    this.turnOrder = turnOrder;
     this.name = name;
-    this.timeline = {};
+    this.timeline = [];
+    this.timelineTokens = [];
+    this.tokens = 0;
+  }
+}
+
+export class TimelineEntry {
+  order: number;
+  track: Track;
+
+  constructor(order: number, track: Track) {
+    this.order = order;
+    this.track = track;
+  }
+}
+
+export class Token {
+  playerId: string;
+
+  constructor(playerId: string) {
+    this.playerId = playerId;
   }
 }
 
@@ -96,10 +129,12 @@ export class Track {
   name: string;
   artist: string;
   releaseYear: number;
+  url: string;
 
-  constructor(name: string, artist: string, releaseYear: number) {
+  constructor(name: string, artist: string, releaseYear: number, url: string) {
     this.name = name;
     this.artist = artist;
     this.releaseYear = releaseYear;
+    this.url = url;
   }
 }

@@ -1,11 +1,14 @@
 import { Server, Socket } from "socket.io";
-import { Game, gameDatabase, Player } from "@/database/game.data";
+import { Game, Player } from "@/database/game.data";
+import { gameDatabase } from "..";
 
 export class SocketWrapper {
   io: Server;
+  sockets: Map<string, Socket>;
 
   constructor(io: Server) {
     this.io = io;
+    this.sockets = new Map<string, Socket>();
     this.initialize();
   }
 
@@ -14,37 +17,20 @@ export class SocketWrapper {
    */
   initialize() {
     this.io.on("connection", (socket: Socket) => {
+      this.sockets.set(socket.id, socket);
       const clientId = socket.handshake.auth.clientId;
+
       const result = gameDatabase.getGameForPlayer(clientId);
       if (result) this.joinGame(socket, result.id, clientId);
       console.log(`User connected: ${clientId}`);
 
       socket.on("disconnect", () => {
+        this.sockets.delete(socket.id);
         const result = gameDatabase.getGameForPlayer(clientId);
         if (result) {
           result.playerConnection(clientId, false);
           this.emitToRoom("left", result.id, result);
         }
-      });
-
-      socket.on("create", () => {
-        const newGame = new Game();
-        gameDatabase.set(newGame.id, newGame);
-        this.joinGame(socket, newGame.id, clientId);
-      });
-
-      socket.on("update", (game: Game) => {
-        gameDatabase.get(game.id).updateGame(game);
-        this.emitToRoom("updated", game.id, gameDatabase.get(game.id));
-        console.log(gameDatabase.get(game.id));
-      });
-
-      socket.on("join", (gameId: string) => {
-        this.joinGame(socket, gameId, clientId);
-      });
-
-      socket.on("leave", (gameId) => {
-        this.leaveGame(socket, gameId, clientId);
       });
 
       socket.on("sendMessage", ({ gameId, message }) => {
@@ -54,6 +40,11 @@ export class SocketWrapper {
   }
 
   joinGame(socket: Socket, gameId: string, clientId: string) {
+    const game = gameDatabase.get(gameId);
+    if (!game) throw new Error("Game Does Not Exist");
+    if (game.started && !game.players[clientId])
+      throw new Error("Game Already Started");
+
     socket.join(gameId);
     gameDatabase
       .get(gameId)
@@ -63,7 +54,8 @@ export class SocketWrapper {
           clientId,
           `Player ${
             Object.values(gameDatabase.get(gameId)!.players).length + 1
-          }`
+          }`,
+          Object.values(gameDatabase.get(gameId)!.players).length
         )
       );
     gameDatabase.get(gameId)?.playerConnection(clientId, true);

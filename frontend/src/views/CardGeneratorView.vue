@@ -1,19 +1,14 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import axios from "axios";
 import VueQrcode from "vue-qrcode";
+import { useSpotifyStore } from "../stores/spotify";
+import { Track } from "../interfaces/game";
+import { router } from "../router/index";
 
-const spotifyClientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
-const spotifySecret = import.meta.env.VITE_SPOTIFY_SECRET;
+const spotifyStore = useSpotifyStore();
+
 const txtValue = ref<string>("");
-const trackList = ref<
-  {
-    artist: string;
-    name: string;
-    year: string;
-    url: string;
-  }[]
->([]);
+const trackList = ref<Track[]>([]);
 const loading = ref<boolean>(false);
 const form = ref();
 const errorMessage = ref<string | null>(null);
@@ -25,46 +20,15 @@ const numOfCardsPerPage = 12;
 const cardWidth = ref<string>("6"); // Default width in cm
 const cardHeight = ref<string>("6"); // Default height in cm
 
-const getSpotifyToken = async () => {
-  const response = await axios.post(
-    "https://accounts.spotify.com/api/token",
-    new URLSearchParams({ grant_type: "client_credentials" }),
-    {
-      headers: {
-        Authorization: `Basic ${btoa(`${spotifyClientId}:${spotifySecret}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    }
-  );
-  return response.data.access_token;
-};
-
-const fetchPlaylistTracks = async () => {
-  errorMessage.value = null; // Reset error before API call
-  if (!(await form.value?.validate()).valid) return;
-
-  try {
-    loading.value = true;
-    const token = await getSpotifyToken();
-    const playlistId = txtValue.value.split("/").pop()?.split("?")[0];
-
-    const { data } = await axios.get(
-      `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    trackList.value = data.items.map((item: any) => ({
-      artist: item.track.artists.map((a: any) => a.name).join(", "),
-      name: item.track.name,
-      year: item.track.album.release_date.split("-")[0],
-      url: item.track.external_urls.spotify,
-    }));
-  } catch (error) {
-    console.error("Error fetching playlist:", error);
+const fetchPlaylists = async () => {
+  loading.value = true;
+  const result = await spotifyStore.readPlaylists([txtValue.value]);
+  if (result.success) {
+    trackList.value = result.trackList;
+  } else {
     errorMessage.value = "Failed to fetch playlist. Please check the link.";
-  } finally {
-    loading.value = false;
   }
+  loading.value = false;
 };
 
 const getSongYearUrl = (track: { artist: string; name: string }) => {
@@ -111,6 +75,14 @@ const required = (value: string) =>
 
 <template>
   <v-btn
+    style="position: absolute; top: 5px; left: 0px"
+    color="grey"
+    variant="plain"
+    @click="router.push('/')"
+  >
+    ⬅️ Back
+  </v-btn>
+  <v-btn
     @click="editYears = !editYears"
     color="#344f91"
     class="hide-print"
@@ -156,9 +128,7 @@ const required = (value: string) =>
         </div>
       </v-form>
 
-      <v-btn :loading="loading" @click="fetchPlaylistTracks">
-        Generate Cards
-      </v-btn>
+      <v-btn :loading="loading" @click="fetchPlaylists"> Generate Cards </v-btn>
       <v-btn
         :disabled="trackList.length === 0"
         @click="printCards"
@@ -208,7 +178,7 @@ const required = (value: string) =>
                 </v-btn>
                 <v-text-field
                   v-if="editYears"
-                  v-model="track.year"
+                  v-model="track.releaseYear"
                   class="hide-print"
                   label="Release Year"
                   variant="solo-filled"
@@ -217,7 +187,7 @@ const required = (value: string) =>
                   style="max-height: 40px; width: 80%; margin-bottom: 30px"
                 ></v-text-field>
                 <p v-if="!editYears" style="font-size: 50px">
-                  {{ track.year }}
+                  {{ track.releaseYear }}
                 </p>
                 <p><strong>Artist:</strong>{{ track.artist }}</p>
                 <p><strong>Name:</strong> {{ track.name }}</p>

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { axiosApi } from "./axios";
+import { axiosApi, getClientId } from "./axios";
 import { io } from "socket.io-client";
 import { router } from "../router/index";
 import { Game } from "../interfaces/game";
@@ -8,15 +8,6 @@ import { Game } from "../interfaces/game";
 export const useGameStore = defineStore("game", () => {
   const loading = ref<boolean>(true);
   const game = ref<Game | null>(null);
-
-  const getClientId = () => {
-    let clientId = localStorage.getItem("clientId");
-    if (!clientId) {
-      clientId = crypto.randomUUID();
-      localStorage.setItem("clientId", clientId);
-    }
-    return clientId;
-  };
 
   const socket = io(import.meta.env.VITE_BACKEND_URL, {
     auth: { clientId: getClientId() },
@@ -37,35 +28,40 @@ export const useGameStore = defineStore("game", () => {
     getPlayers.value?.find((player) => player.id === getClientId())
   );
 
-  // const create = async () => {
-  //   const response = await axiosApi.post("game/create");
-  //   currentGameId.value = response.data.gameId;
-  // };
+  const getPlaylists = computed(() => {
+    if (game.value) return Array.from(Object.values(game.value?.playlists!));
+    else return null;
+  });
 
-  const create = () => {
-    socket.emit("create");
-    console.log(`Creating Game`);
+  const create = async () => {
+    const response = await axiosApi.post("/game/create");
   };
 
-  const update = () => {
-    socket.emit("update", game.value);
-    console.log(`Updating Game`);
+  const read = async (gameId: string) => {
+    const result = await axiosApi.get(`/game/${gameId}`);
   };
 
-  const join = (gameId: string) => {
-    socket.emit("join", gameId);
-    console.log(`Joining ${gameId}`);
+  const update = async () => {
+    const response = await axiosApi.post(
+      `/game/update/${game.value?.id}`,
+      game.value
+    );
   };
 
-  const leave = () => {
-    socket.emit("leave", getGame.value?.id);
+  const join = async (gameId: string) => {
+    const response = await axiosApi.post(`/game/join/${gameId}`);
+  };
+
+  const leave = async () => {
+    const response = await axiosApi.post(`/game/leave/${game.value?.id}`);
     router.replace({ name: "Menu" });
-    console.log(`Leaving ${getGame.value?.id}`);
   };
 
   socket.on("joined", (data: Game) => {
     game.value = data;
-    router.push({ name: "RoomView", params: { gameId: data.id } });
+    if (data.started)
+      router.replace({ name: "GameView", params: { gameId: data.id } });
+    else router.replace({ name: "RoomView", params: { gameId: data.id } });
     console.log(`Joined ${data.id}`);
   });
 
@@ -75,16 +71,22 @@ export const useGameStore = defineStore("game", () => {
   });
 
   socket.on("updated", (data: Game) => {
+    console.log("updated", data);
     game.value = data;
+    if (data.started)
+      router.replace({ name: "GameView", params: { gameId: data.id } });
   });
 
   return {
+    socket,
     getLoading,
     getClientId,
     getGame,
     getPlayers,
     getMe,
+    getPlaylists,
     create,
+    read,
     update,
     join,
     leave,
