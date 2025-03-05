@@ -20,21 +20,17 @@ export class SocketWrapper {
       this.sockets.set(socket.id, socket);
       const clientId = socket.handshake.auth.clientId;
 
-      const result = gameDatabase.getGameForPlayer(clientId);
+      const result = gameDatabase.gameForPlayer(clientId);
       if (result) this.joinGame(socket, result.id, clientId);
       console.log(`User connected: ${clientId}`);
 
       socket.on("disconnect", () => {
         this.sockets.delete(socket.id);
-        const result = gameDatabase.getGameForPlayer(clientId);
+        const result = gameDatabase.gameForPlayer(clientId);
         if (result) {
           result.playerConnection(clientId, false);
           this.emitToRoom("left", result.id, result);
         }
-      });
-
-      socket.on("sendMessage", ({ gameId, message }) => {
-        this.io.to(gameId).emit("receiveMessage", message);
       });
     });
   }
@@ -52,8 +48,7 @@ export class SocketWrapper {
         clientId,
         new Player(
           clientId,
-          `Player ${
-            Object.values(gameDatabase.get(gameId)!.players).length + 1
+          `Player ${Object.values(gameDatabase.get(gameId)!.players).length + 1
           }`,
           Object.values(gameDatabase.get(gameId)!.players).length
         )

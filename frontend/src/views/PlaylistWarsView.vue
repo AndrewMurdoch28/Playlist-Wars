@@ -18,7 +18,12 @@ const create = async () => {
   <v-container
     class="fill-height d-flex flex-column align-center justify-center"
   >
-    <v-card color="card" class="pa-6 text-center" elevation="10" max-width="400">
+    <v-card
+      color="card"
+      class="pa-6 text-center"
+      elevation="10"
+      max-width="400"
+    >
       <v-btn
         style="position: absolute; top: 0px; left: 0px"
         variant="plain"
@@ -34,7 +39,7 @@ const create = async () => {
       </v-card-text>
       <v-divider class="my-4"></v-divider>
       <v-btn
-        :loading="gameStore.getLoading"
+        :loading="gameStore.loading"
         block
         color="primary"
         size="large"
@@ -44,7 +49,7 @@ const create = async () => {
         🎮 Create Lobby
       </v-btn>
       <v-btn
-        :loading="gameStore.getLoading"
+        :loading="gameStore.loading"
         block
         color="secondary"
         size="large"

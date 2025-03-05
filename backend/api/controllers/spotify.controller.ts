@@ -61,6 +61,7 @@ const controller = {
   playSong: async (req: Request, res: Response) => {
     const accessToken = req.cookies["access_token"];
     const url = req.body.url;
+    const deviceId = req.body.deviceId;
     const match = url.match(/track\/([a-zA-Z0-9]+)/);
     if (!match) {
       console.error("Invalid Spotify URL");
@@ -71,7 +72,7 @@ const controller = {
 
     try {
       const response = await axios.put(
-        `https://api.spotify.com/v1/me/player/play?device_id=${accessToken}`,
+        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
         {
           uris: [`spotify:track:${trackId}`],
         },

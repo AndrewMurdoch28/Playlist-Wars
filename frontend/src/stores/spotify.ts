@@ -7,22 +7,13 @@ export const useSpotifyStore = defineStore("spotify", () => {
 
   const isActive = ref<boolean>(false);
   const isPaused = ref<boolean>(false);
-  const player = ref<any>();
+  const currentTime = ref<number>(0);
+  const duration = ref<number>(0);
+  const volume = ref<number>(0.1);
+  const player = ref<Spotify.Player>();
+  const playerName = ref<string>(`Playlist Wars - ${Math.floor(Math.random() * 1000)}`);
   const deviceId = ref<string | null>();
-  const currentTrack = ref<any>();
-
-  const setActive = (newValue: boolean) => {
-    isActive.value = newValue;
-  };
-  const setPaused = (newValue: boolean) => {
-    isPaused.value = newValue;
-  };
-  const setPlayer = (newValue: Spotify.Player) => {
-    player.value = newValue;
-  };
-  const setTrack = (newValue: Spotify.Track) => {
-    currentTrack.value = newValue;
-  };
+  const currentTrack = ref<Spotify.Track>();
 
   const readAccessToken = async () => {
     const response = await axiosApi.get("/spotify/token");
@@ -38,20 +29,20 @@ export const useSpotifyStore = defineStore("spotify", () => {
   };
 
   const playTrackFromUrl = async (url: string) => {
-    const response = await axiosApi.put("/spotify/playSong", { url });
+    const response = await axiosApi.put("/spotify/playSong", { url, deviceId: deviceId.value });
   };
 
   return {
     accessToken,
     isActive,
     isPaused,
+    currentTime,
+    duration,
+    volume,
     player,
+    playerName,
     deviceId,
     currentTrack,
-    setActive,
-    setPaused,
-    setPlayer,
-    setTrack,
     readAccessToken,
     readPlaylists,
     playTrackFromUrl,

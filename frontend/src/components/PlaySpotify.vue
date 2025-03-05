@@ -7,9 +7,9 @@
   >
     <v-card-title>Spotify Player</v-card-title>
     <v-card-text>
-      <template v-if="!spotifyStore.isActive">
+      <template v-if="!spotifyStore.player || !spotifyStore.isActive">
         <v-alert type="warning" class="mb-4">
-          Open spotify app and select Web Playback SDK
+          Open the spotify app and select <span style="font-weight: bolder;">{{ spotifyStore.playerName }}</span> from the connect to device menu <v-icon>mdi-laptop</v-icon>.
         </v-alert>
       </template>
       <template v-else>
@@ -36,8 +36,8 @@
 
         <div style="display: flex">
           <v-slider
-            v-model="currentTime"
-            :max="duration"
+            v-model="spotifyStore.currentTime"
+            :max="spotifyStore.duration"
             step="1000"
             hide-details
             @update:model-value="seek"
@@ -45,7 +45,9 @@
           >
             <template v-slot:append>
               <span
-                >{{ formatTime(currentTime) }}/{{ formatTime(duration) }}</span
+                >{{ formatTime(spotifyStore.currentTime) }}/{{
+                  formatTime(spotifyStore.duration)
+                }}</span
               >
             </template>
           </v-slider>
@@ -79,7 +81,7 @@
         </div>
 
         <v-slider
-          v-model="volume"
+          v-model="spotifyStore.volume"
           min="0"
           max="1"
           step="0.01"
@@ -100,85 +102,76 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useSpotifyStore } from "../stores/spotify";
 
 const props = defineProps<{ hideDetails: boolean }>();
 
 const spotifyStore = useSpotifyStore();
 
-const currentTime = ref(0);
-const duration = ref(0);
-const volume = ref(0.1);
 let interval: NodeJS.Timeout;
 
+// Sync the player state with the store on mount
 onMounted(() => {
-  window.onSpotifyWebPlaybackSDKReady = () => {
-    spotifyStore.readAccessToken().then((access_token: string | undefined) => {
-      if (!access_token) {
-        console.error("Undefined Access Token");
-        return;
-      }
-      const player = new window.Spotify.Player({
-        name: "Web Playback SDK",
-        getOAuthToken: (cb) => cb(access_token),
-        volume: volume.value,
-      });
-
-      spotifyStore.setPlayer(player);
-
-      player.addListener("ready", ({ device_id }) => {
-        spotifyStore.deviceId = device_id;
-        console.log("Ready with Device ID", device_id);
-      });
-
-      player.addListener("not_ready", ({ device_id }) => {
-        console.log("Device ID has gone offline", device_id);
-      });
-
-      player.addListener("player_state_changed", (state) => {
-        if (!state) return;
-        spotifyStore.setTrack(state.track_window.current_track);
-        spotifyStore.setPaused(state.paused);
-        duration.value = state.duration;
-        currentTime.value = state.position;
-
-        if (interval) clearInterval(interval);
-        if (!state.paused) {
-          interval = setInterval(() => {
-            if (currentTime.value < duration.value) {
-              currentTime.value += 1000;
-            }
-          }, 1000);
-        }
-
-        player.getCurrentState().then((state) => {
-          spotifyStore.setActive(!!state);
-        });
-      });
-
-      player.connect();
+  spotifyStore.readAccessToken().then((access_token: string | undefined) => {
+    if (!access_token) {
+      console.error("Undefined Access Token");
+      return;
+    }
+    if (spotifyStore.player && spotifyStore.isActive) return;
+    const player = new window.Spotify.Player({
+      name: spotifyStore.playerName,
+      getOAuthToken: (cb) => cb(access_token),
+      volume: spotifyStore.volume,
     });
-  };
 
-  // Load the script
-  const script = document.createElement("script");
-  script.src = "https://sdk.scdn.co/spotify-player.js";
-  script.async = true;
-  document.body.appendChild(script);
+    spotifyStore.player = player;
+
+    player.addListener("ready", ({ device_id }) => {
+      spotifyStore.deviceId = device_id;
+      console.log("Ready with name", spotifyStore.playerName);
+    });
+
+    player.addListener("not_ready", ({ device_id }) => {
+      console.log("Device ID has gone offline", device_id);
+    });
+
+    player.addListener("player_state_changed", (state) => {
+      if (!state) return;
+      spotifyStore.currentTrack = state.track_window.current_track;
+      spotifyStore.isPaused = state.paused;
+      spotifyStore.duration = state.duration;
+      spotifyStore.currentTime = state.position;
+
+      if (interval) clearInterval(interval);
+      if (!state.paused) {
+        interval = setInterval(() => {
+          if (spotifyStore.currentTime < spotifyStore.duration) {
+            spotifyStore.currentTime += 1000;
+          }
+        }, 1000);
+      }
+
+      player.getCurrentState().then((state) => {
+        spotifyStore.isActive = !!state;
+      });
+    });
+
+    player.connect();
+  });
 });
 
 const seek = (position: number) => {
   if (spotifyStore.player) {
     spotifyStore.player.seek(position);
-    currentTime.value = position;
+    spotifyStore.currentTime = position;
   }
 };
 
 const setVolume = (newVolume: number) => {
   if (spotifyStore.player) {
     spotifyStore.player.setVolume(newVolume);
-    volume.value = newVolume;
+    spotifyStore.volume = newVolume;
   }
 };
 

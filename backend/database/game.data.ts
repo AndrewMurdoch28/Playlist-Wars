@@ -27,7 +27,7 @@ export class GameDatabase {
     this.games.clear();
   }
 
-  getGameForPlayer(playerId: string) {
+  gameForPlayer(playerId: string) {
     for (const game of this.games.values()) {
       if (game.players[playerId]) {
         return game;

@@ -29,23 +29,17 @@ const startGame = async () => {
   loading.value = true;
   const result = await spotifyStore.readPlaylists(playlistUrls.value);
   if (result.success) {
-    gameStore.getGame!.tracks = result.trackList;
+    gameStore.game!.tracks = result.trackList;
     let turnOrderCounter = 0;
     gameStore.getPlayers?.forEach((player) => {
-      const trackToAdd =
-        gameStore.getGame!.tracks[
-          Math.floor(Math.random() * gameStore.getGame!.tracks.length)
-        ];
-      player.timeline.push(new TimelineEntry(0, trackToAdd));
-      gameStore.getGame!.tracks = gameStore.getGame!.tracks.filter(
-        (track) => track.url !== trackToAdd.url
-      );
+      const track = gameStore.getTrackForTimeline();
+      player.timeline.push(new TimelineEntry(0, track));
       player.turnOrder = turnOrderCounter;
       turnOrderCounter++;
     });
     gameStore.getPlayers?.sort((a, b) => a.turnOrder - b.turnOrder);
-    gameStore.getGame!.currentTurn = gameStore.getPlayers![0];
-    gameStore.getGame!.started = true;
+    gameStore.game!.currentTurn = gameStore.getPlayers![0];
+    gameStore.game!.started = true;
     await gameStore.update();
   } else {
     errorMessage.value = "Failed to fetch playlist. Please check the link.";
@@ -73,7 +67,7 @@ const updateName = async () => {
 };
 
 const updatePlaylists = async () => {
-  gameStore.getGame!.playlists = playlistUrls.value;
+  gameStore.game!.playlists = playlistUrls.value;
   await gameStore.update();
 };
 
@@ -102,7 +96,7 @@ const removePlaylist = (index: number) => {
         max-width="400"
       >
         <v-card-title class="text-h4 font-weight-bold">
-          Game ID: {{ gameStore.getGame?.id }}
+          Game ID: {{ gameStore.game?.id }}
         </v-card-title>
 
         <div v-for="player in gameStore.getPlayers" :key="player.id">
@@ -166,7 +160,7 @@ const removePlaylist = (index: number) => {
           </div>
         </div>
 
-        <v-btn
+        <!-- <v-btn
           @click="startGame"
           :loading="loading"
           :disabled="
@@ -174,6 +168,15 @@ const removePlaylist = (index: number) => {
             playlistUrls.length < 1 ||
             playlistUrls[0].length < 1
           "
+          color="green darken-1"
+          block
+        >
+          <v-icon left>mdi-play</v-icon> Start Game
+        </v-btn> -->
+
+        <v-btn
+          @click="startGame"
+          :loading="loading"
           color="green darken-1"
           block
         >

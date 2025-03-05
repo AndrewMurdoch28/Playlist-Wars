@@ -4,8 +4,11 @@ import { axiosApi, getClientId } from "./axios";
 import { io } from "socket.io-client";
 import { router } from "../router/index";
 import { Game } from "../interfaces/game";
+import { useSpotifyStore } from "./spotify";
 
 export const useGameStore = defineStore("game", () => {
+  const spotifyStore = useSpotifyStore();
+
   const loading = ref<boolean>(true);
   const game = ref<Game | null>(null);
 
@@ -15,9 +18,6 @@ export const useGameStore = defineStore("game", () => {
   });
   socket.connect();
   loading.value = false;
-
-  const getLoading = computed(() => loading.value);
-  const getGame = computed(() => game.value);
 
   const getPlayers = computed(() => {
     if (game.value) return Array.from(Object.values(game.value?.players!));
@@ -77,11 +77,22 @@ export const useGameStore = defineStore("game", () => {
       router.replace({ name: "GameView", params: { gameId: data.id } });
   });
 
+  const getTrackForTimeline = () => {
+    const trackForTimeline =
+      game.value!.tracks[
+      Math.floor(Math.random() * game.value!.tracks.length)
+      ];
+    game.value!.tracks = game.value!.tracks.filter(
+      (track) => track.url !== trackForTimeline.url
+    );
+    return trackForTimeline;
+  }
+
   return {
+    loading,
+    game,
     socket,
-    getLoading,
     getClientId,
-    getGame,
     getPlayers,
     getMe,
     getPlaylists,
@@ -90,5 +101,6 @@ export const useGameStore = defineStore("game", () => {
     update,
     join,
     leave,
+    getTrackForTimeline,
   };
 });
