@@ -51,7 +51,9 @@ export class Game {
   started: boolean;
   currentTurn: Player | null;
   turnState: TurnState;
-  activeTimelineEntry: TimelineEntry | null;
+  countdown: number;
+  coutdownVisible: boolean;
+  activeTrack: Track | null;
 
   constructor() {
     this.id = generateRandomString(5);
@@ -60,8 +62,10 @@ export class Game {
     this.tracks = [];
     this.started = false;
     this.currentTurn = null;
+    this.countdown = 0;
+    this.coutdownVisible = false;
     this.turnState = TurnState.PlaceTimelineEntry;
-    this.activeTimelineEntry = null;
+    this.activeTrack = null;
   }
 
   updateGame(data: Partial<this>) {
@@ -92,7 +96,7 @@ export class Player {
   connected: boolean;
   name: string;
   turnOrder: number;
-  timeline: TimelineEntry[];
+  timeline: Track[];
   timelineTokens: Token[];
   tokens: number;
 
@@ -107,34 +111,14 @@ export class Player {
   }
 }
 
-export class TimelineEntry {
-  order: number;
-  track: Track;
-
-  constructor(order: number, track: Track) {
-    this.order = order;
-    this.track = track;
-  }
-}
-
-export class Token {
+export interface Token {
   playerId: string;
-
-  constructor(playerId: string) {
-    this.playerId = playerId;
-  }
+  position: number;
 }
 
-export class Track {
+export interface Track {
   name: string;
   artist: string;
   releaseYear: number;
   url: string;
-
-  constructor(name: string, artist: string, releaseYear: number, url: string) {
-    this.name = name;
-    this.artist = artist;
-    this.releaseYear = releaseYear;
-    this.url = url;
-  }
 }

@@ -16,7 +16,6 @@ const join = async () => {
     loading.value = true;
     await gameStore.join(gameId.value.trim());
   } catch (error) {
-    console.log(error)
     errorVisible.value = true;
     errorMessage.value = "Room does not exist.";
   } finally {

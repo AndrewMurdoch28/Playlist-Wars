@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, Ref, ref } from "vue";
 import { axiosApi, getClientId } from "./axios";
 import { io } from "socket.io-client";
 import { router } from "../router/index";
-import { Game } from "../interfaces/game";
+import { AlertType, Game, Track, TurnState } from "../interfaces/game";
 import { useSpotifyStore } from "./spotify";
 
 export const useGameStore = defineStore("game", () => {
@@ -18,6 +18,10 @@ export const useGameStore = defineStore("game", () => {
   });
   socket.connect();
   loading.value = false;
+
+  const showAddBtns = ref<boolean>(false);
+
+  const callbackCountdown = ref<Function>(() => { });
 
   const getPlayers = computed(() => {
     if (game.value) return Array.from(Object.values(game.value?.players!));
@@ -62,20 +66,56 @@ export const useGameStore = defineStore("game", () => {
     if (data.started)
       router.replace({ name: "GameView", params: { gameId: data.id } });
     else router.replace({ name: "RoomView", params: { gameId: data.id } });
-    console.log(`Joined ${data.id}`);
   });
 
   socket.on("left", (data: Game) => {
     game.value = data;
-    console.log(`left`);
   });
 
   socket.on("updated", (data: Game) => {
-    console.log("updated", data);
     game.value = data;
     if (data.started)
       router.replace({ name: "GameView", params: { gameId: data.id } });
   });
+
+  const startTimer = (length: number, callback: Function) => {
+    socket.emit("startTimer", game.value!.id, length);
+    callbackCountdown.value = callback;
+  }
+
+  socket.on("startedTimer", (countdown: number) => {
+    game.value!.countdown = countdown;
+    socket.on("timerUpdated", (countdown: number) => {
+      console.log("timer value", countdown)
+      game.value!.countdown = countdown;
+    });
+    socket.on("timerFinished", () => {
+      socket.removeListener("timerUpdated");
+      socket.removeListener("timerFinished");
+      game.value!.countdown = 0;
+      callbackCountdown.value();
+    });
+  })
+
+  const getCorrectPosition = (activeTrack: Track, timeline: Track[]) => {
+    if (!activeTrack || !timeline.length) return null;
+
+    const tempTimeline = timeline.filter(track => track.url !== activeTrack.url);
+    const activeYear = activeTrack.releaseYear;
+
+    if (!tempTimeline.length) return 0;
+
+    for (let i = 0; i <= tempTimeline.length; i++) {
+      const prevYear = tempTimeline[i - 1]?.releaseYear ?? -Infinity;
+      const nextYear = tempTimeline[i]?.releaseYear ?? Infinity;
+
+      if (activeYear >= prevYear && activeYear <= nextYear) {
+        return i;
+      }
+    }
+    return tempTimeline.length;
+  };
+
 
   const getTrackForTimeline = () => {
     const trackForTimeline =
@@ -92,6 +132,7 @@ export const useGameStore = defineStore("game", () => {
     loading,
     game,
     socket,
+    showAddBtns,
     getClientId,
     getPlayers,
     getMe,
@@ -101,6 +142,8 @@ export const useGameStore = defineStore("game", () => {
     update,
     join,
     leave,
+    getCorrectPosition,
+    startTimer,
     getTrackForTimeline,
   };
 });

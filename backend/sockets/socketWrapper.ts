@@ -32,6 +32,20 @@ export class SocketWrapper {
           this.emitToRoom("left", result.id, result);
         }
       });
+
+      socket.on("startTimer", (gameId: string, length: number) => {
+        let countdown = length;
+        this.emitToRoom("startedTimer", gameId, length);
+        const timer = setInterval(() => {
+          if (countdown > 0) {
+            countdown--;
+            this.emitToRoom("timerUpdated", gameId, countdown);
+          } else {
+            clearInterval(timer);
+            this.emitToRoom("timerFinished", gameId);
+          }
+        }, 1000);
+      });
     });
   }
 
@@ -55,7 +69,6 @@ export class SocketWrapper {
       );
     gameDatabase.get(gameId)?.playerConnection(clientId, true);
     this.emitToRoom("joined", gameId, gameDatabase.get(gameId));
-    console.log(`${clientId} joined room ${gameId}`);
   }
 
   leaveGame(socket: Socket, gameId: string, clientId: string) {
@@ -63,7 +76,6 @@ export class SocketWrapper {
     gameDatabase.get(gameId)?.removePlayer(clientId);
     gameDatabase.get(gameId)?.playerConnection(clientId, false);
     this.emitToRoom("left", gameId, gameDatabase.get(gameId));
-    console.log(`${clientId} left room ${gameId}`);
   }
 
   /**
@@ -83,7 +95,6 @@ export class SocketWrapper {
    */
   emitToRoom(event: string, gameId: string, ...args: any[]) {
     this.io.to(gameId).emit(event, ...args);
-    console.log(`Event "${event}" emitted to room ${gameId}:`, ...args);
   }
 
   /**
@@ -94,6 +105,5 @@ export class SocketWrapper {
    */
   emitToUser(event: string, socketId: string, ...args: any[]) {
     this.io.to(socketId).emit(event, ...args);
-    console.log(`Event "${event}" sent to user ${socketId}:`, ...args);
   }
 }

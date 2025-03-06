@@ -2,7 +2,6 @@
 import { useGameStore } from "../stores/game";
 import { ref, watch } from "vue";
 import { useSpotifyStore } from "../stores/spotify";
-import { TimelineEntry } from "../interfaces/game";
 import PlaySpotify from "../components/PlaySpotify.vue";
 
 const gameStore = useGameStore();
@@ -33,8 +32,9 @@ const startGame = async () => {
     let turnOrderCounter = 0;
     gameStore.getPlayers?.forEach((player) => {
       const track = gameStore.getTrackForTimeline();
-      player.timeline.push(new TimelineEntry(0, track));
+      player.timeline.push(track);
       player.turnOrder = turnOrderCounter;
+      player.tokens = 3; // temp
       turnOrderCounter++;
     });
     gameStore.getPlayers?.sort((a, b) => a.turnOrder - b.turnOrder);
@@ -160,7 +160,7 @@ const removePlaylist = (index: number) => {
           </div>
         </div>
 
-        <!-- <v-btn
+        <v-btn
           @click="startGame"
           :loading="loading"
           :disabled="
@@ -168,15 +168,6 @@ const removePlaylist = (index: number) => {
             playlistUrls.length < 1 ||
             playlistUrls[0].length < 1
           "
-          color="green darken-1"
-          block
-        >
-          <v-icon left>mdi-play</v-icon> Start Game
-        </v-btn> -->
-
-        <v-btn
-          @click="startGame"
-          :loading="loading"
           color="green darken-1"
           block
         >

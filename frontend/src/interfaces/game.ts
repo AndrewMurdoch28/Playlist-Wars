@@ -1,7 +1,14 @@
 export enum TurnState {
   PlaceTimelineEntry = "PlaceTimelineEntry",
+  PendingPlaceTokens = "PendingPlaceTokens",
   PlaceTokens = "PlaceTokens",
   GuessSong = "GuessSong",
+}
+
+export enum AlertType {
+  Success = "success",
+  Failure = "failure",
+  Normal = "normal",
 }
 
 export interface Game {
@@ -12,7 +19,9 @@ export interface Game {
   started: boolean;
   currentTurn: Player | null;
   turnState: TurnState;
-  activeTimelineEntry: TimelineEntry | null;
+  countdown: number;
+  coutdownVisible: boolean;
+  activeTrack: Track | null;
 }
 
 export interface Player {
@@ -20,27 +29,14 @@ export interface Player {
   connected: boolean;
   name: string;
   turnOrder: number;
-  timeline: TimelineEntry[];
+  timeline: Track[];
   timelineTokens: Token[];
   tokens: number;
 }
 
-export class Token {
+export interface Token {
   playerId: string;
-
-  constructor(playerId: string) {
-    this.playerId = playerId;
-  }
-}
-
-export class TimelineEntry {
-  order: number;
-  track: Track;
-
-  constructor(order: number, track: Track) {
-    this.order = order;
-    this.track = track;
-  }
+  position: number;
 }
 
 export interface Track {

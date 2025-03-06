@@ -7,7 +7,6 @@ const controller = {
   create: (req: Request, res: Response) => {
     const socketId = req.get("socketId") as string;
     const clientId = req.get("clientId") as string;
-    console.log(socketId, clientId);
     const newGame = new Game();
     gameDatabase.set(newGame.id, newGame);
     if (newGame.id) {
