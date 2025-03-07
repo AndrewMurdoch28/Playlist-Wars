@@ -19,19 +19,27 @@ export interface Game {
   started: boolean;
   currentTurn: Player | null;
   turnState: TurnState;
-  countdown: number;
-  coutdownVisible: boolean;
   activeTrack: Track | null;
+  guesses: TrackGuess[];
+  guessToAction: TrackGuess | null;
+}
+
+export interface TrackGuess {
+  playerId: string;
+  name: string;
+  artist: string;
 }
 
 export interface Player {
   id: string;
   connected: boolean;
   name: string;
+  ready: boolean;
   turnOrder: number;
   timeline: Track[];
   timelineTokens: Token[];
   tokens: number;
+  action: boolean;
 }
 
 export interface Token {

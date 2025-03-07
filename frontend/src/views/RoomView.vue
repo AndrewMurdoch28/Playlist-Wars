@@ -56,7 +56,7 @@ const onInputChange = (fn: Function) => {
   clearTimeout(timeout.value);
   timeout.value = setTimeout(() => {
     fn();
-  }, 500);
+  }, 300);
 };
 
 const updateName = async () => {
@@ -140,7 +140,7 @@ const removePlaylist = (index: number) => {
               v-model="playlistUrls[index]"
               @input="onInputChange(updatePlaylists)"
               label="Playlist URL"
-              placeholder="Enter Game ID"
+              placeholder="Enter Playlist URL"
               density="compact"
               variant="outlined"
               hide-details

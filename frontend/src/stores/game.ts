@@ -21,7 +21,10 @@ export const useGameStore = defineStore("game", () => {
 
   const showAddBtns = ref<boolean>(false);
 
-  const callbackCountdown = ref<Function>(() => { });
+  const callbackCountdown = ref<Function>(() => {});
+  const countdownVisible = ref<boolean>(false);
+  const countdownLength = ref<number>(0);
+  const countdownValue = ref<number>(0);
 
   const getPlayers = computed(() => {
     if (game.value) return Array.from(Object.values(game.value?.players!));
@@ -78,61 +81,65 @@ export const useGameStore = defineStore("game", () => {
       router.replace({ name: "GameView", params: { gameId: data.id } });
   });
 
-  const startTimer = (length: number, callback: Function) => {
-    socket.emit("startTimer", game.value!.id, length);
-    callbackCountdown.value = callback;
-  }
+  const alertMessage = ref<string>("");
+  const alertType = ref<string>(AlertType.Normal);
+  const alertVisible = ref<boolean>(false);
 
-  socket.on("startedTimer", (countdown: number) => {
-    game.value!.countdown = countdown;
-    socket.on("timerUpdated", (countdown: number) => {
-      console.log("timer value", countdown)
-      game.value!.countdown = countdown;
-    });
-    socket.on("timerFinished", () => {
-      socket.removeListener("timerUpdated");
-      socket.removeListener("timerFinished");
-      game.value!.countdown = 0;
-      callbackCountdown.value();
-    });
-  })
+  socket.on("alertMessage", (message: string, result: boolean) => {
+    alertMessage.value = message;
+    alertType.value = result ? AlertType.Success : AlertType.Failure;
+    alertVisible.value = true;
+  });
 
-  const getCorrectPosition = (activeTrack: Track, timeline: Track[]) => {
-    if (!activeTrack || !timeline.length) return null;
-
-    const tempTimeline = timeline.filter(track => track.url !== activeTrack.url);
-    const activeYear = activeTrack.releaseYear;
-
-    if (!tempTimeline.length) return 0;
-
-    for (let i = 0; i <= tempTimeline.length; i++) {
-      const prevYear = tempTimeline[i - 1]?.releaseYear ?? -Infinity;
-      const nextYear = tempTimeline[i]?.releaseYear ?? Infinity;
-
-      if (activeYear >= prevYear && activeYear <= nextYear) {
-        return i;
-      }
-    }
-    return tempTimeline.length;
+  const placeTimelineEntry = (position: number) => {
+    socket.emit("placeTimelineEntry", game.value!.id, position);
   };
 
+  const startTimer = (
+    length: number,
+    showDialog: boolean,
+    callback: Function
+  ) => {
+    socket.emit("startTimer", game.value!.id, length, showDialog);
+    callbackCountdown.value = callback;
+  };
+
+  socket.on("startedTimer", (value: number, showDialog: boolean) => {
+    countdownLength.value = value;
+    countdownValue.value = value;
+    countdownVisible.value = showDialog;
+    console.log("startedTimer", countdownValue.value);
+  });
+
+  socket.on("timerUpdated", (value: number) => {
+    console.log("timerUpdated", value);
+    countdownValue.value = value;
+  });
+
+  socket.on("timerFinished", () => {
+    countdownValue.value = 0;
+    countdownLength.value = 0;
+    callbackCountdown.value();
+    callbackCountdown.value = () => {};
+  });
 
   const getTrackForTimeline = () => {
     const trackForTimeline =
-      game.value!.tracks[
-      Math.floor(Math.random() * game.value!.tracks.length)
-      ];
+      game.value!.tracks[Math.floor(Math.random() * game.value!.tracks.length)];
     game.value!.tracks = game.value!.tracks.filter(
       (track) => track.url !== trackForTimeline.url
     );
     return trackForTimeline;
-  }
+  };
 
   return {
     loading,
     game,
     socket,
     showAddBtns,
+    countdownVisible,
+    countdownLength,
+    countdownValue,
     getClientId,
     getPlayers,
     getMe,
@@ -142,7 +149,10 @@ export const useGameStore = defineStore("game", () => {
     update,
     join,
     leave,
-    getCorrectPosition,
+    alertMessage,
+    alertType,
+    alertVisible,
+    placeTimelineEntry,
     startTimer,
     getTrackForTimeline,
   };
