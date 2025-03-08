@@ -22,7 +22,7 @@ const cardHeight = ref<string>("6"); // Default height in cm
 
 const fetchPlaylists = async () => {
   loading.value = true;
-  const result = await spotifyStore.readPlaylists([txtValue.value]);
+  const result = await spotifyStore.readPlaylistsFrontend([txtValue.value]);
   if (result.success) {
     trackList.value = result.trackList;
   } else {
