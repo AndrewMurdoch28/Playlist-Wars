@@ -19,13 +19,6 @@ export const useGameStore = defineStore("game", () => {
   socket.connect();
   loading.value = false;
 
-  const showAddBtns = ref<boolean>(false);
-
-  const callbackCountdown = ref<Function>(() => {});
-  const countdownVisible = ref<boolean>(false);
-  const countdownLength = ref<number>(0);
-  const countdownValue = ref<number>(0);
-
   const getPlayers = computed(() => {
     if (game.value) return Array.from(Object.values(game.value?.players!));
     else return null;
@@ -35,10 +28,20 @@ export const useGameStore = defineStore("game", () => {
     getPlayers.value?.find((player) => player.id === getClientId())
   );
 
+  const getCurrent = computed(
+    () => game.value?.players[game.value.currentPlayerId!]
+  );
+
   const getPlaylists = computed(() => {
     if (game.value) return Array.from(Object.values(game.value?.playlists!));
     else return null;
   });
+
+  const guessToAction = computed(() =>
+    game.value?.guesses.find(
+      (guess) => guess.playerId === game.value?.guessToActionId
+    )
+  );
 
   const create = async () => {
     const response = await axiosApi.post("/game/create");
@@ -81,35 +84,28 @@ export const useGameStore = defineStore("game", () => {
       router.replace({ name: "GameView", params: { gameId: data.id } });
   });
 
-  const alertMessage = ref<string>("");
-  const alertType = ref<string>(AlertType.Normal);
-  const alertVisible = ref<boolean>(false);
-
-  socket.on("alertMessage", (message: string, result: boolean) => {
-    alertMessage.value = message;
-    alertType.value = result ? AlertType.Success : AlertType.Failure;
-    alertVisible.value = true;
+  socket.on("changeSong", (url: string) => {
+    spotifyStore.playTrackFromUrl(url);
   });
 
-  const placeTimelineEntry = (position: number) => {
-    socket.emit("placeTimelineEntry", game.value!.id, position);
-  };
+  const showAddBtns = ref<boolean>(false);
 
-  const startTimer = (
-    length: number,
-    showDialog: boolean,
-    callback: Function
-  ) => {
-    socket.emit("startTimer", game.value!.id, length, showDialog);
-    callbackCountdown.value = callback;
-  };
+  const callbackCountdown = ref<Function>(() => {});
+  const countdownVisible = ref<boolean>(false);
+  const countdownLength = ref<number>(0);
+  const countdownValue = ref<number>(0);
+  const countdownMessage = ref<string>("");
 
-  socket.on("startedTimer", (value: number, showDialog: boolean) => {
-    countdownLength.value = value;
-    countdownValue.value = value;
-    countdownVisible.value = showDialog;
-    console.log("startedTimer", countdownValue.value);
-  });
+  socket.on(
+    "startedTimer",
+    (value: number, showDialog: boolean, message: string) => {
+      countdownLength.value = value;
+      countdownValue.value = value;
+      countdownVisible.value = showDialog;
+      countdownMessage.value = message;
+      console.log("startedTimer", countdownValue.value);
+    }
+  );
 
   socket.on("timerUpdated", (value: number) => {
     console.log("timerUpdated", value);
@@ -120,7 +116,20 @@ export const useGameStore = defineStore("game", () => {
     countdownValue.value = 0;
     countdownLength.value = 0;
     callbackCountdown.value();
+    countdownMessage.value = "";
+    countdownVisible.value = false;
     callbackCountdown.value = () => {};
+  });
+
+  const alertMessage = ref<string[]>([]);
+  const alertType = ref<AlertType[]>([]);
+  const alertVisible = ref<boolean>(false);
+
+  socket.on("alertMessage", (message: string, type: AlertType) => {
+    console.log("alert message", message, type);
+    alertMessage.value.push(message);
+    alertType.value?.push(type);
+    alertVisible.value = true;
   });
 
   const getTrackForTimeline = () => {
@@ -132,6 +141,25 @@ export const useGameStore = defineStore("game", () => {
     return trackForTimeline;
   };
 
+  const placeTimelineEntry = (position: number) => {
+    socket.emit("placeTimelineEntry", game.value!.id, position);
+  };
+
+  const placeToken = (position: number | null | undefined) => {
+    socket.emit("placeToken", game.value!.id, position);
+  };
+
+  const guessSong = (
+    name: string | null | undefined,
+    artist: string | null | undefined
+  ) => {
+    socket.emit("guessSong", game.value!.id, name, artist);
+  };
+
+  const actionGuess = (action: boolean) => {
+    socket.emit("actionGuess", game.value!.id, action);
+  };
+
   return {
     loading,
     game,
@@ -140,10 +168,13 @@ export const useGameStore = defineStore("game", () => {
     countdownVisible,
     countdownLength,
     countdownValue,
+    countdownMessage,
     getClientId,
     getPlayers,
     getMe,
+    getCurrent,
     getPlaylists,
+    guessToAction,
     create,
     read,
     update,
@@ -152,8 +183,10 @@ export const useGameStore = defineStore("game", () => {
     alertMessage,
     alertType,
     alertVisible,
-    placeTimelineEntry,
-    startTimer,
     getTrackForTimeline,
+    placeTimelineEntry,
+    placeToken,
+    guessSong,
+    actionGuess,
   };
 });

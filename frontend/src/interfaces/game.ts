@@ -3,6 +3,7 @@ export enum TurnState {
   PendingPlaceTokens = "PendingPlaceTokens",
   PlaceTokens = "PlaceTokens",
   GuessSong = "GuessSong",
+  ActionGuesses = "ActionGuesses",
 }
 
 export enum AlertType {
@@ -17,11 +18,11 @@ export interface Game {
   playlists: string[];
   tracks: Track[];
   started: boolean;
-  currentTurn: Player | null;
+  currentPlayerId: string | null;
   turnState: TurnState;
   activeTrack: Track | null;
   guesses: TrackGuess[];
-  guessToAction: TrackGuess | null;
+  guessToActionId: string | null;
 }
 
 export interface TrackGuess {

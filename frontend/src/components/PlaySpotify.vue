@@ -1,103 +1,96 @@
 <template>
+  <template v-if="!spotifyStore.player || !spotifyStore.isActive">
+    <v-alert width="100vw" max-width="450" type="warning">
+      Open the spotify app and select
+      <span style="font-weight: bolder">{{ spotifyStore.playerName }}</span>
+      from the connect to device menu <v-icon>mdi-laptop</v-icon>.
+    </v-alert>
+  </template>
   <v-card
+    v-else
     :elevation="hideDetails ? 0 : ''"
     color="card"
-    width="90vw"
-    max-width="400"
+    width="100vw"
+    max-width="450"
+    class="pa-4"
   >
-    <div class="pa-2">
-      <div>Spotify Player</div>
-    <template v-if="!spotifyStore.player || !spotifyStore.isActive">
-      <v-alert type="warning" class="mb-4">
-        Open the spotify app and select
-        <span style="font-weight: bolder">{{ spotifyStore.playerName }}</span>
-        from the connect to device menu <v-icon>mdi-laptop</v-icon>.
-      </v-alert>
-    </template>
-    <template v-else>
-      <v-img
-        v-if="!hideDetails && spotifyStore.currentTrack?.album?.images[0]?.url"
-        :src="spotifyStore.currentTrack?.album?.images[0]?.url"
-        class="mb-4"
-        height="200"
-        contain
-      ></v-img>
+    <v-img
+      v-if="!hideDetails && spotifyStore.currentTrack?.album?.images[0]?.url"
+      :src="spotifyStore.currentTrack?.album?.images[0]?.url"
+      class="mb-4"
+      height="200"
+      contain
+    ></v-img>
 
-      <div v-if="!hideDetails" class="list-container">
-        <div class="list-item">
-          <div class="list-item-title text-h6">
-            {{ spotifyStore.currentTrack?.name }}
-          </div>
-          <div class="list-item-subtitle">
-            {{ spotifyStore.currentTrack?.artists[0]?.name }}
-          </div>
+    <div v-if="!hideDetails" class="list-container">
+      <div class="list-item">
+        <div class="list-item-title text-h6">
+          {{ spotifyStore.currentTrack?.name }}
+        </div>
+        <div class="list-item-subtitle">
+          {{ spotifyStore.currentTrack?.artists[0]?.name }}
         </div>
       </div>
+    </div>
 
-      <div style="display: flex">
-        <v-slider
-          v-model="spotifyStore.currentTime"
-          :max="spotifyStore.duration"
-          step="1000"
-          hide-details
-          @update:model-value="seek"
-          class="ma-0"
-        >
-          <template v-slot:append>
-            <span
-              >{{ formatTime(spotifyStore.currentTime) }}/{{
-                formatTime(spotifyStore.duration)
-              }}</span
-            >
-          </template>
-        </v-slider>
-        <v-btn-group v-if="hideDetails" class="ml-1" justify="center">
-          <v-btn icon color="card" @click="spotifyStore.player?.togglePlay()">
-            <v-icon>
-              {{ spotifyStore.isPaused ? "mdi-play" : "mdi-pause" }}
-            </v-icon>
-          </v-btn>
-        </v-btn-group>
-      </div>
-
-      <div v-if="!hideDetails" style="display: flex; justify-content: center">
-        <v-btn-group class="mt-4" justify="center">
-          <v-btn
-            icon
-            color="card"
-            @click="spotifyStore.player?.previousTrack()"
-          >
-            <v-icon>mdi-skip-previous</v-icon>
-          </v-btn>
-          <v-btn icon color="card" @click="spotifyStore.player?.togglePlay()">
-            <v-icon>
-              {{ spotifyStore.isPaused ? "mdi-play" : "mdi-pause" }}
-            </v-icon>
-          </v-btn>
-          <v-btn icon color="card" @click="spotifyStore.player?.nextTrack()">
-            <v-icon>mdi-skip-next</v-icon>
-          </v-btn>
-        </v-btn-group>
-      </div>
-
+    <div style="display: flex">
       <v-slider
-        v-model="spotifyStore.volume"
-        min="0"
-        max="1"
-        step="0.01"
+        v-model="spotifyStore.currentTime"
+        :max="spotifyStore.duration"
+        step="1000"
         hide-details
-        class="mt-4"
-        @update:model-value="setVolume"
+        @update:model-value="seek"
+        class="ma-0"
       >
-        <template v-slot:prepend>
-          <v-icon>mdi-volume-low</v-icon>
-        </template>
         <template v-slot:append>
-          <v-icon>mdi-volume-high</v-icon>
+          <span
+            >{{ formatTime(spotifyStore.currentTime) }}/{{
+              formatTime(spotifyStore.duration)
+            }}</span
+          >
         </template>
       </v-slider>
-    </template>
-  </div>
+      <v-btn-group v-if="hideDetails" class="ml-1" justify="center">
+        <v-btn icon color="card" @click="spotifyStore.player?.togglePlay()">
+          <v-icon>
+            {{ spotifyStore.isPaused ? "mdi-play" : "mdi-pause" }}
+          </v-icon>
+        </v-btn>
+      </v-btn-group>
+    </div>
+
+    <div v-if="!hideDetails" style="display: flex; justify-content: center">
+      <v-btn-group class="mt-4" justify="center">
+        <v-btn icon color="card" @click="spotifyStore.player?.previousTrack()">
+          <v-icon>mdi-skip-previous</v-icon>
+        </v-btn>
+        <v-btn icon color="card" @click="spotifyStore.player?.togglePlay()">
+          <v-icon>
+            {{ spotifyStore.isPaused ? "mdi-play" : "mdi-pause" }}
+          </v-icon>
+        </v-btn>
+        <v-btn icon color="card" @click="spotifyStore.player?.nextTrack()">
+          <v-icon>mdi-skip-next</v-icon>
+        </v-btn>
+      </v-btn-group>
+    </div>
+
+    <v-slider
+      v-model="spotifyStore.volume"
+      min="0"
+      max="1"
+      step="0.01"
+      hide-details
+      class="mt-4"
+      @update:model-value="setVolume"
+    >
+      <template v-slot:prepend>
+        <v-icon>mdi-volume-low</v-icon>
+      </template>
+      <template v-slot:append>
+        <v-icon>mdi-volume-high</v-icon>
+      </template>
+    </v-slider>
   </v-card>
 </template>
 

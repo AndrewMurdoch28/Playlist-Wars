@@ -37,8 +37,10 @@ const startGame = async () => {
       player.tokens = 3; // temp
       turnOrderCounter++;
     });
-    gameStore.getPlayers?.sort((a, b) => a.turnOrder - b.turnOrder);
-    gameStore.game!.currentTurn = gameStore.getPlayers![0];
+    gameStore.game!.currentPlayerId = gameStore.getPlayers!.find(
+      (player) => player.turnOrder === 0
+    )!.id;
+    gameStore.game!.activeTrack = gameStore.getTrackForTimeline();
     gameStore.game!.started = true;
     await gameStore.update();
   } else {
@@ -93,7 +95,7 @@ const removePlaylist = (index: number) => {
         class="pa-6 text-center"
         elevation="10"
         width="90vw"
-        max-width="400"
+        max-width="450"
       >
         <v-card-title class="text-h4 font-weight-bold">
           Game ID: {{ gameStore.game?.id }}

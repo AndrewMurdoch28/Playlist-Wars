@@ -11,7 +11,7 @@ const controller = {
     gameDatabase.set(newGame.id, newGame);
     if (newGame.id) {
       socketWrapper.joinGame(
-        socketWrapper.sockets.get(socketId)!,
+        socketWrapper.sockets.get(clientId)!,
         newGame.id,
         clientId
       );
@@ -41,7 +41,7 @@ const controller = {
     if (gameId) {
       try {
         socketWrapper.joinGame(
-          socketWrapper.sockets.get(socketId)!,
+          socketWrapper.sockets.get(clientId)!,
           gameId,
           clientId
         );
@@ -59,7 +59,7 @@ const controller = {
     const gameId = req.params.gameId;
     if (gameId) {
       socketWrapper.leaveGame(
-        socketWrapper.sockets.get(socketId)!,
+        socketWrapper.sockets.get(clientId)!,
         gameId,
         clientId
       );

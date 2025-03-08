@@ -2,6 +2,12 @@ import { Server, Socket } from "socket.io";
 import { Game, Player, Track, TurnState } from "@/database/game.data";
 import { gameDatabase } from "..";
 
+export enum AlertType {
+  Success = "success",
+  Failure = "failure",
+  Normal = "normal",
+}
+
 export class SocketWrapper {
   io: Server;
   sockets: Map<string, Socket>;
@@ -12,9 +18,6 @@ export class SocketWrapper {
     this.initialize();
   }
 
-  /**
-   * Initializes socket event listeners
-   */
   initialize() {
     this.io.on("connection", (socket: Socket) => {
       const clientId = socket.handshake.auth.clientId;
@@ -33,186 +36,259 @@ export class SocketWrapper {
         }
       });
 
-      socket.on("startGame", (gameId: string) => {
-        
-      });
-
       socket.on("placeTimelineEntry", (gameId: string, position: number) => {
         let game = gameDatabase.get(gameId);
         if (!game || game.turnState !== TurnState.PlaceTimelineEntry) return;
-        const activeTimeline = game.currentTurn!.timeline;
+        const activeTimeline = game.players[game.currentPlayerId!]!.timeline;
         const activeTrack = game.activeTrack!;
         activeTimeline.splice(position, 0, activeTrack!);
         if (Object.values(game.players).some((player) => player.tokens > 0)) {
           game.turnState = TurnState.PendingPlaceTokens;
-          this.startTimer(gameId, 5, true, () => {
-            game!.turnState = TurnState.PlaceTokens;
-            this.emitToRoom("updated", gameId, game);
-          });
+          this.startTimer(
+            gameId,
+            5,
+            true,
+            () => {
+              game!.turnState = TurnState.PlaceTokens;
+              this.emitToRoom("updated", gameId, game);
+            },
+            "Place tokens to attempt to steal the song. First come first serve!"
+          );
         } else game.turnState = TurnState.GuessSong;
         this.emitToRoom("updated", gameId, game);
-
-        this.startTimer(gameId, 5, true, () => {
-          game = gameDatabase.get(gameId)!;
-          game.turnState = TurnState.PlaceTokens;
-          this.emitToRoom("updated", gameId, game);
-        });
-      });
-
-      socket.on("placedToken", (gameId: string, position: number) => {
-        let game = gameDatabase.get(gameId);
-        if (!game || game.turnState !== TurnState.PlaceTokens) return;
-        const activeTimeline = game.currentTurn!.timeline;
-        const activeTrack = game.activeTrack!;
-        const thisPlayer = game.getPlayer(clientId);
-        if (thisPlayer!.tokens > 0) {
-          thisPlayer!.tokens--;
-          game.currentTurn?.timelineTokens.push({
-            playerId: thisPlayer!.id,
-            position,
-          });
-        }
-        thisPlayer.ready = true;
-        this.emitToRoom("updated", gameId, game);
-        if (game.arePlayersReady()) {
-          Object.values(game.players).forEach(
-            (player) => (player.ready = false)
-          );
-          const correctPosition = this.getCorrectPosition(
-            activeTrack,
-            activeTimeline
-          );
-          const activeTrackPosition = game.currentTurn?.timeline.findIndex(
-            (track) => track.url === activeTrack.url
-          );
-          const correctAnswerActiveTrack =
-            activeTrackPosition === correctPosition;
-          this.sockets
-            .get(game.currentTurn!.id)
-            ?.emit(
-              "alertMessage",
-              correctAnswerActiveTrack
-                ? "Congrats you placed the song correctly!"
-                : "You placed the song incorectly.",
-              correctAnswerActiveTrack
-            );
-          if (!correctAnswerActiveTrack) {
-            game.currentTurn?.timeline.splice(activeTrackPosition!, 1);
-            for (const token of game.currentTurn!.timelineTokens) {
-              const player = game?.players[token.playerId];
-              if (token.position === correctPosition) {
-                const correctPosition = this.getCorrectPosition(
-                  activeTrack,
-                  player!.timeline
-                );
-                player!.timeline.splice(correctPosition!, 0, activeTrack);
-                this.sockets
-                  .get(player.id)
-                  ?.emit(
-                    "alertMessage",
-                    `Congrats you placed the token correctly! You stole that song.`,
-                    true
-                  );
-              }
-              this.sockets
-                .get(player.id)
-                ?.emit(
-                  "alertMessage",
-                  `You placed the song incorrectly.`,
-                  false
-                );
-            }
-            game.currentTurn!.timelineTokens = [];
-          }
-          game.activeTrack = null;
-          game.turnState = TurnState.GuessSong;
-          this.emitToRoom("updated", gameId, game);
-        }
-      });
-
-      socket.on("guessSong", (gameId: string, name: string, artist: string) => {
-        let game = gameDatabase.get(gameId);
-        if (!game || game.turnState !== TurnState.GuessSong) return;
-        const thisPlayer = game.getPlayer(clientId);
-        if (name && name !== "" && artist && artist !== "")
-          game.guesses.push({ playerId: thisPlayer.id, name, artist });
-        thisPlayer.ready = true;
-        this.emitToRoom("updated", gameId, game);
-        if (game.arePlayersReady()) {
-          Object.values(game.players).forEach(
-            (player) => (player.ready = false)
-          );
-          game.turnState = TurnState.ActionGuesses;
-          game.guessToAction = game.guesses[0];
-          this.emitToRoom("updated", gameId, game);
-        }
       });
 
       socket.on(
-        "actionGuess",
-        (gameId: string, playerId: string, action: boolean) => {
+        "placeToken",
+        (gameId: string, position: number | null | undefined) => {
           let game = gameDatabase.get(gameId);
-          if (!game || game.turnState !== TurnState.ActionGuesses) return;
-          const thisPlayer = game.getPlayer(clientId);
+          if (!game || game.turnState !== TurnState.PlaceTokens) return;
+          const thisPlayer = game.players[clientId];
+          console.log(position, thisPlayer);
+          if (typeof position === "number" && thisPlayer!.tokens > 0) {
+            thisPlayer!.tokens--;
+            game.players[game.currentPlayerId!]?.timelineTokens.push({
+              playerId: thisPlayer!.id,
+              position,
+            });
+            console.log("did this run");
+          }
+          console.log(game.players[game.currentPlayerId!]);
           thisPlayer.ready = true;
-          thisPlayer.action = action;
-          if (game.arePlayersReady()) {
-            const yes = Object.values(game.players).filter(
-              (player) => player.action === true
+          this.emitToRoom("updated", gameId, game);
+          if (
+            Object.values(game.players).every(
+              (player) =>
+                player.ready ||
+                player.id === game.players[game.currentPlayerId!]!.id
+            )
+          ) {
+            Object.values(game.players).forEach(
+              (player) => (player.ready = false)
             );
-            const no = Object.values(game.players).filter(
-              (player) => player.action === false
-            );
-            if (yes > no) {
-              this.sockets
-                .get(playerId)
-                ?.emit(
-                  "alertMessage",
-                  `Congrats you guessed the song correctly! You get one token.`,
-                  true
-                );
-              game.getPlayer(playerId).tokens++;
-            } else if (yes <= no) {
-              this.sockets
-                .get(playerId)
-                ?.emit(
-                  "alertMessage",
-                  `You guessed the song incorrectly.`,
-                  false
-                );
-            }
-            const currentIndex = game.guesses.findIndex(
-              (guess) => guess.playerId === game.guessToAction?.playerId
-            );
-            if (currentIndex + 1 < game.guesses.length) {
-              game.guessToAction = game.guesses[currentIndex + 1];
-            } else {
-              const findNextTurn = Object.values(game.players).find(
-                (player) => {
-                  game.currentTurn!.turnOrder + 1 === player.turnOrder;
-                }
-              );
-              if (findNextTurn) {
-                game.currentTurn = findNextTurn;
-              } else {
-                game.currentTurn = Object.values(game.players).find(
-                  (player) => {
-                    player.turnOrder === 0;
-                  }
-                )!;
-              }
-              this.emitToRoom(
-                "alertMessage",
-                gameId,
-                `It is now ${game.currentTurn.name}'s turn!`
-              );
-              game.turnState = TurnState.PlaceTimelineEntry;
-            }
+            game.turnState = TurnState.GuessSong;
             this.emitToRoom("updated", gameId, game);
           }
         }
       );
+
+      socket.on(
+        "guessSong",
+        (
+          gameId: string,
+          name: string | null | undefined,
+          artist: string | null | undefined
+        ) => {
+          let game = gameDatabase.get(gameId);
+          if (!game || game.turnState !== TurnState.GuessSong) return;
+          const thisPlayer = game.players[clientId];
+          if (name && name !== "" && artist && artist !== "")
+            game.guesses.push({ playerId: thisPlayer.id, name, artist });
+          thisPlayer.ready = true;
+          this.emitToRoom("updated", gameId, game);
+          if (game.arePlayersReady()) {
+            Object.values(game.players).forEach(
+              (player) => (player.ready = false)
+            );
+            const activeTimeline =
+              game.players[game.currentPlayerId!]!.timeline;
+            const activeTrack = game.activeTrack!;
+            const correctPosition = this.getCorrectPosition(
+              activeTrack,
+              activeTimeline
+            );
+            const activeTrackPosition = game.players[
+              game.currentPlayerId!
+            ]?.timeline.findIndex((track) => track.url === activeTrack.url);
+            const correctAnswerActiveTrack =
+              activeTrackPosition === correctPosition;
+            console.log(
+              correctAnswerActiveTrack,
+              activeTrackPosition,
+              correctPosition
+            );
+            this.sockets
+              .get(game.players[game.currentPlayerId!]!.id)
+              ?.emit(
+                "alertMessage",
+                correctAnswerActiveTrack
+                  ? "Congrats you placed the song correctly!"
+                  : "You placed the song incorectly.",
+                correctAnswerActiveTrack ? AlertType.Success : AlertType.Failure
+              );
+            Object.values(game.players).forEach((player) => {
+              if (game.players[game.currentPlayerId!]?.id !== player.id) {
+                this.sockets
+                  .get(player.id)
+                  ?.emit(
+                    "alertMessage",
+                    correctAnswerActiveTrack
+                      ? `${
+                          game.players[game.currentPlayerId!]?.name
+                        } placed the song correctly in their timeline.`
+                      : `${
+                          game.players[game.currentPlayerId!]?.name
+                        } placed the song incorrectly in their timeline.`,
+                    AlertType.Normal
+                  );
+              }
+            });
+
+            if (!correctAnswerActiveTrack) {
+              console.log(
+                "test",
+                game.players[game.currentPlayerId!],
+                game.players[game.currentPlayerId!]!.timelineTokens
+              );
+              for (const token of game.players[game.currentPlayerId!]!
+                .timelineTokens) {
+                const player = game?.players[token.playerId];
+                console.log(token.position, correctPosition);
+                if (token.position === correctPosition) {
+                  const correctPosition = this.getCorrectPosition(
+                    activeTrack,
+                    player!.timeline
+                  );
+                  player!.timeline.splice(correctPosition!, 0, activeTrack);
+                  this.sockets
+                    .get(player.id)
+                    ?.emit(
+                      "alertMessage",
+                      `Congrats you placed the token correctly! You stole that song.`,
+                      AlertType.Success
+                    );
+                } else {
+                  this.sockets
+                    .get(player.id)
+                    ?.emit(
+                      "alertMessage",
+                      `You placed the token incorrectly.`,
+                      AlertType.Failure
+                    );
+                }
+              }
+              game.players[game.currentPlayerId!]?.timeline.splice(
+                activeTrackPosition!,
+                1
+              );
+              game.players[game.currentPlayerId!]!.timelineTokens = [];
+            }
+            if (game.guesses.length > 0) {
+              game.turnState = TurnState.ActionGuesses;
+              game.guessToActionId = game.guesses[0].playerId;
+              this.emitToRoom("updated", gameId, game);
+            } else {
+              this.nextTurn(game);
+            }
+          }
+        }
+      );
+
+      socket.on("actionGuess", (gameId: string, action: boolean) => {
+        let game = gameDatabase.get(gameId);
+        if (!game || game.turnState !== TurnState.ActionGuesses) return;
+        const thisPlayer = game.players[clientId];
+        thisPlayer.ready = true;
+        thisPlayer.action = action;
+        this.emitToRoom("updated", gameId, game);
+        if (game.arePlayersReady()) {
+          const guessToAction = game.guesses.find(
+            (guess) => guess.playerId === game.guessToActionId
+          )!;
+          Object.values(game.players).forEach(
+            (player) => (player.ready = false)
+          );
+          const yes = Object.values(game.players).filter(
+            (player) => player.action === true
+          ).length;
+          const no = Object.values(game.players).filter(
+            (player) => player.action === false
+          ).length;
+          if (yes > no) {
+            this.sockets
+              .get(guessToAction.playerId)
+              ?.emit(
+                "alertMessage",
+                `Congrats you guessed the song correctly! You get one token.`,
+                AlertType.Success
+              );
+            game.players[guessToAction.playerId].tokens++;
+            this.emitToRoom("updated", gameId, game);
+          } else if (yes <= no) {
+            this.sockets
+              .get(guessToAction.playerId)
+              ?.emit(
+                "alertMessage",
+                `You guessed the song incorrectly.`,
+                AlertType.Failure
+              );
+          }
+          const currentIndex = game.guesses.findIndex(
+            (guess) => guess.playerId === guessToAction.playerId
+          );
+          if (currentIndex + 1 < game.guesses.length) {
+            game.guessToActionId = game.guesses[currentIndex + 1].playerId;
+            this.emitToRoom("updated", gameId, game);
+          } else {
+            this.nextTurn(game);
+          }
+        }
+      });
     });
+  }
+
+  nextTurn(game: Game) {
+    const findNextTurn = Object.values(game.players).find(
+      (player) =>
+        game.players[game.currentPlayerId!]!.turnOrder + 1 === player.turnOrder
+    );
+    if (findNextTurn) {
+      game.currentPlayerId = findNextTurn.id;
+    } else {
+      game.currentPlayerId = Object.values(game.players).find(
+        (player) => player.turnOrder === 0
+      )!.id;
+    }
+    this.emitToRoom(
+      "alertMessage",
+      game.id,
+      `It is now ${game.players[game.currentPlayerId!].name}'s turn!`,
+      AlertType.Normal
+    );
+    game.guesses = [];
+    game.activeTrack = this.getTrackForTimeline(game);
+    this.emitToRoom("changeSong", game.id, game.activeTrack.url);
+    game.turnState = TurnState.PlaceTimelineEntry;
+    this.emitToRoom("updated", game.id, game);
+  }
+
+  getTrackForTimeline(game: Game) {
+    const trackForTimeline =
+      game!.tracks[Math.floor(Math.random() * game!.tracks.length)];
+    game!.tracks = game!.tracks.filter(
+      (track) => track.url !== trackForTimeline.url
+    );
+    return trackForTimeline;
   }
 
   getCorrectPosition(activeTrack: Track, timeline: Track[]) {
@@ -236,10 +312,11 @@ export class SocketWrapper {
     gameId: string,
     length: number,
     showDialog: boolean,
-    callback: Function
+    callback: Function,
+    message?: string
   ) {
     let countdown = length;
-    this.emitToRoom("startedTimer", gameId, length, showDialog);
+    this.emitToRoom("startedTimer", gameId, length, showDialog, message);
     const timer = setInterval(() => {
       if (countdown > 0) {
         countdown--;

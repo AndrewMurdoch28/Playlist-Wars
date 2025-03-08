@@ -57,11 +57,11 @@ export class Game {
   playlists: string[];
   tracks: Track[];
   started: boolean;
-  currentTurn: Player | null;
+  currentPlayerId: string | null;
   turnState: TurnState;
   activeTrack: Track | null;
   guesses: TrackGuess[];
-  guessToAction: TrackGuess | null;
+  guessToActionId: string | null;
 
   constructor() {
     this.id = generateRandomString(5);
@@ -69,11 +69,11 @@ export class Game {
     this.playlists = [];
     this.tracks = [];
     this.started = false;
-    this.currentTurn = null;
+    this.currentPlayerId = null;
     this.turnState = TurnState.PlaceTimelineEntry;
     this.activeTrack = null;
     this.guesses = [];
-    this.guessToAction = null;
+    this.guessToActionId = null;
   }
 
   updateGame(data: Partial<this>) {
@@ -82,10 +82,6 @@ export class Game {
 
   addPlayer(playerId: string, playerData: Player) {
     if (!this.players[playerId]) this.players[playerId] = playerData;
-  }
-
-  getPlayer(playerId: string) {
-    return this.players[playerId];
   }
 
   arePlayersReady() {

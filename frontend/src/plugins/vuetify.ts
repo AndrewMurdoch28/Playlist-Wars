@@ -11,6 +11,9 @@ export default createVuetify({
     themes: {
       customTheme: {
         colors: {
+          primary: "#0c56cc",
+          success: "#087313",
+          error: "#c40606",
           card: "#171716",
         },
       },
