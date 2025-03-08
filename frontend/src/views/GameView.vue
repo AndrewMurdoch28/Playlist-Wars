@@ -161,19 +161,23 @@ const startVoteKick = () => {};
   </v-menu>
   <v-dialog v-model="gameStore.alertVisible" width="400">
     <v-card color="card" class="pa-4 text-center">
-      <v-icon
-        v-if="gameStore.alertType[0] === AlertType.Success"
-        color="success"
-        size="40"
-        >mdi-check</v-icon
-      >
-      <v-icon
-        v-if="gameStore.alertType[0] === AlertType.Failure"
-        color="error"
-        size="40"
-        >mdi-cancel</v-icon
-      >
-      <div style="font-size: 1.3rem">{{ gameStore.alertMessage[0] }}</div>
+      <div style="display: flex">
+        <v-icon
+          v-if="gameStore.alertType[0] === AlertType.Success"
+          color="success"
+          size="40"
+          >mdi-check</v-icon
+        >
+        <v-icon
+          v-if="gameStore.alertType[0] === AlertType.Failure"
+          color="error"
+          size="40"
+          >mdi-cancel</v-icon
+        >
+        <div style="font-size: 1.3rem; margin-left: 5px; line-height: 1.8">
+          {{ gameStore.alertMessage[0] }}
+        </div>
+      </div>
       <v-btn class="mt-4" color="white" @click="gameStore.alertVisible = false"
         >OK</v-btn
       >
@@ -192,10 +196,11 @@ const startVoteKick = () => {};
       <div
         style="
           display: flex;
-          justify-content: center;
           align-items: center;
           flex-wrap: nowrap;
           overflow-y: auto;
+          margin-left: 5px;
+          margin-right: 5px;
         "
       >
         <template
@@ -237,53 +242,55 @@ const startVoteKick = () => {};
       ></v-progress-linear>
     </v-card>
   </v-dialog>
-  <v-dialog v-model="actionGuessVisible" persistent>
+  <v-dialog v-model="actionGuessVisible" persistent max-width="400px">
     <v-card color="card" class="pa-4 text-center">
-      <div>
-        Correct Name:
-        <span style="font-size: 1.3rem">{{
+      <v-card-title class="text-h6">Guess Evaluation</v-card-title>
+      <v-divider class="mb-2"></v-divider>
+
+      <v-row>
+        <v-col cols="6">Correct Name:</v-col>
+        <v-col cols="6" style="font-weight: bolder">{{
           gameStore.game?.activeTrack?.name
-        }}</span>
-      </div>
-      <div>
-        Correct Artist:
-        <span style="font-size: 1.3rem">{{
+        }}</v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="6">Correct Artist:</v-col>
+        <v-col cols="6" style="font-weight: bolder">{{
           gameStore.game?.activeTrack?.artist
-        }}</span>
-      </div>
-      <div>
-        Guess Name:
-        <span style="font-size: 1.3rem">{{
+        }}</v-col>
+      </v-row>
+      <v-divider class="my-2"></v-divider>
+      <v-row>
+        <v-col cols="6">Guess Name:</v-col>
+        <v-col cols="6" style="font-weight: bolder">{{
           gameStore.guessToAction?.name
-        }}</span>
-      </div>
-      <div>
-        Guess Artist:
-        <span style="font-size: 1.3rem">{{
+        }}</v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="6">Guess Artist:</v-col>
+        <v-col cols="6" style="font-weight: bolder">{{
           gameStore.guessToAction?.artist
-        }}</span>
-      </div>
-      <div
-        style="
-          display: flex;
-          justify-content: center;
-          margin-top: 15px;
-          gap: 10px;
-        "
-      >
+        }}</v-col>
+      </v-row>
+
+      <v-divider class="my-2"></v-divider>
+
+      <v-card-actions class="justify-center">
         <v-btn
           :disabled="gameStore.getMe?.ready"
           @click="actionGuess(true)"
           color="success"
-          >Guess is Correct</v-btn
         >
+          Guess is Correct
+        </v-btn>
         <v-btn
           :disabled="gameStore.getMe?.ready"
           @click="actionGuess(false)"
           color="error"
-          >Guess is incorrect</v-btn
         >
-      </div>
+          Guess is Incorrect
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
   <v-container>
@@ -292,9 +299,7 @@ const startVoteKick = () => {};
         <template v-slot:activator="{ props }">
           <v-card
             v-bind="props"
-            :color="
-              player.id === gameStore.getCurrent?.id ? 'primary' : 'card'
-            "
+            :color="player.id === gameStore.getCurrent?.id ? 'primary' : 'card'"
             class="pa-1 px-3"
           >
             <div style="display: flex; gap: 5px; font-size: 1.4rem">
@@ -339,83 +344,95 @@ const startVoteKick = () => {};
         (gameStore.countdownValue / gameStore.countdownLength) * 100
       "
     ></v-progress-linear> -->
-    <div style="display: flex; flex-wrap: wrap; gap: 5px">
-      <v-card color="card" class="mb-1">
-        <div v-if="guessSongVisible">
-          <v-text-field
-            v-model="guessSongName"
-            max-width="395"
-            class="px-2 mb-1 mt-2"
-            hide-details
-            label="Song Name"
-            placeholder="Enter Song Name"
-          ></v-text-field>
-          <v-text-field
-            v-model="guessSongArtist"
-            max-width="395"
-            class="px-2"
-            hide-details
-            label="Song Artist"
-            placeholder="Enter Song Artist"
-          ></v-text-field>
-          <div
-            style="display: flex; justify-content: flex-end; max-width: 395px"
+
+    <PlaySpotify :hideDetails="true"></PlaySpotify>
+    <v-card
+      color="card"
+      class="mb-1"
+      style="display: flex; flex-direction: column; justify-content: center"
+    >
+      <div v-if="gameStore.game?.turnState === TurnState.PlaceTimelineEntry">
+        <div class="pa-2 text-h5 font-weight-bold">
+          {{
+            gameStore.getMe?.id === gameStore.getCurrent?.id
+              ? `Listen to song and select the correct position in the timeline.`
+              : `${gameStore.getCurrent?.name} is placing the song in the timeline.`
+          }}
+        </div>
+      </div>
+      <div v-if="gameStore.game?.turnState === TurnState.PlaceTokens">
+        <div class="pa-2 text-h5 font-weight-bold">
+          {{
+            gameStore.getMe?.id === gameStore.getCurrent?.id
+              ? "Waiting for players to place tokens."
+              : gameStore.getMe?.ready
+              ? "Waiting on other players."
+              : "Place tokens to try and steal!"
+          }}
+        </div>
+      </div>
+      <div v-if="gameStore.game?.turnState === TurnState.GuessSong">
+        <div class="pa-2 text-h5 font-weight-bold">
+          {{
+            gameStore.getMe?.ready
+              ? "Waiting on other players."
+              : "Guess the song to win a token!"
+          }}
+        </div>
+      </div>
+      <div v-if="guessSongVisible">
+        <v-text-field
+          v-model="guessSongName"
+          max-width="395"
+          class="px-2 mb-1 mt-2"
+          hide-details
+          label="Song Name"
+          placeholder="Enter Song Name"
+        ></v-text-field>
+        <v-text-field
+          v-model="guessSongArtist"
+          max-width="395"
+          class="px-2"
+          hide-details
+          label="Song Artist"
+          placeholder="Enter Song Artist"
+        ></v-text-field>
+        <div style="display: flex; justify-content: flex-end; max-width: 395px">
+          <v-btn @click="guessSong" class="mx-2 my-1" color="primary"
+            >Submit</v-btn
           >
-            <v-btn @click="guessSong" class="mx-2 my-1" color="primary"
-              >Submit</v-btn
-            >
-          </div>
         </div>
-        <PlaySpotify :hideDetails="true"></PlaySpotify>
-      </v-card>
-      <v-card
-        color="card"
-        class="mb-1"
-        style="display: flex; flex-direction: column; justify-content: center"
+      </div>
+      <v-btn
+        v-if="
+          gameStore.getMe?.id !== gameStore.getCurrent?.id &&
+          gameStore.game?.turnState === TurnState.PlaceTokens &&
+          gameStore.getMe!.tokens > 0  &&
+          !gameStore.getMe?.ready
+        "
+        @click="pass"
+        class="ma-2"
+        color="primary"
+        >Pass</v-btn
       >
-        <div v-if="gameStore.game?.turnState === TurnState.PlaceTimelineEntry">
-          <div class="pa-2 text-h5 font-weight-bold">
-            {{
-              gameStore.getMe?.id === gameStore.getCurrent?.id
-                ? `Listen to song and select the correct position in the timeline.`
-                : `${gameStore.getCurrent?.name} is placing the song in the timeline.`
-            }}
-          </div>
-        </div>
-        <div v-if="gameStore.game?.turnState === TurnState.PlaceTokens">
-          <div class="pa-2 text-h5 font-weight-bold">
-            {{
-              gameStore.getMe?.id === gameStore.getCurrent?.id
-                ? "Waiting for players to place tokens."
-                : gameStore.getMe?.ready
-                ? "Waiting on other players."
-                : "Place tokens to try and steal!"
-            }}
-          </div>
-        </div>
-        <div v-if="gameStore.game?.turnState === TurnState.GuessSong">
-          <div class="pa-2 text-h5 font-weight-bold">
-            {{
-              gameStore.getMe?.ready
-                ? "Waiting on other players."
-                : "Guess the song to win a token!"
-            }}
-          </div>
-        </div>
+      <div style="display: flex">
         <v-btn
-          v-if="
-            gameStore.getMe?.id !== gameStore.getCurrent?.id &&
-            gameStore.game?.turnState === TurnState.PlaceTokens &&
-            !gameStore.getMe?.ready
-          "
-          @click="pass"
+          v-if="gameStore.getMe!.tokens >= gameStore.game!.tokensToBuy"
+          @click="gameStore.buySong()"
           class="ma-2"
           color="primary"
-          >Pass</v-btn
-        ></v-card
-      >
-    </div>
-    <v-card color="card">
+          >Buy Song {{ `(Cost: ${gameStore.game?.tokensToBuy} tokens)` }}</v-btn
+        >
+        <v-btn
+          v-if="gameStore.getMe!.tokens >= 1 && gameStore.game?.turnState === TurnState.PlaceTimelineEntry"
+          @click="gameStore.buyAnotherSong()"
+          class="ma-2"
+          color="primary"
+          >Change Song (Cost 1 Token)</v-btn
+        >
+      </div>
+    </v-card>
+    <v-card color="card" class="mb-1">
       <div style="display: flex">
         <v-icon color="primary" size="35" class="ma-2 mr-0"
           >mdi-music-box-multiple</v-icon
@@ -458,7 +475,12 @@ const startVoteKick = () => {};
             max-height="150"
             :color="cardColour.get(track.url)"
           >
-            <div v-if="track.url === gameStore.game?.activeTrack?.url">
+            <div
+              v-if="
+                track.url === gameStore.game?.activeTrack?.url &&
+                gameStore.game.turnState !== TurnState.ActionGuesses
+              "
+            >
               <span style="font-size: 50px; line-height: 3">?</span>
             </div>
             <div v-else>
@@ -482,6 +504,32 @@ const startVoteKick = () => {};
           </v-btn>
         </template>
       </div>
+    </v-card>
+    <v-card color="card" class="pa-3">
+      <div class="d-flex align-center">
+        <v-icon color="primary" size="35" class="ma-2 mr-0"
+          >mdi-text-long</v-icon
+        >
+        <v-card-title class="text-h6">Game Logs</v-card-title>
+      </div>
+
+      <v-list bg-color="card" density="compact" max-height="200">
+        <v-list-item v-for="log in gameStore.game?.logs">
+          <v-list-item-title class="text-body-2">
+            <span style="font-size: 0.7rem; margin-right: 5px">{{
+              new Date(log.timestamp).toLocaleTimeString()
+            }}</span>
+            <span
+              :class="{
+                'text-gray': !log.important,
+              }"
+              style="font-weight: bold"
+            >
+              {{ log.text }}
+            </span>
+          </v-list-item-title>
+        </v-list-item>
+      </v-list>
     </v-card>
   </v-container>
 </template>

@@ -15,6 +15,7 @@ export default createVuetify({
           success: "#087313",
           error: "#c40606",
           card: "#171716",
+          gray: "#757474",
         },
       },
     },

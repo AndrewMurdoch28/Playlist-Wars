@@ -12,8 +12,15 @@ export enum AlertType {
   Normal = "normal",
 }
 
+export interface Log {
+  timestamp: Date;
+  important: boolean;
+  text: string;
+}
+
 export interface Game {
   id: string;
+  logs: Log[];
   players: { [key: string]: Player };
   playlists: string[];
   tracks: Track[];
@@ -23,6 +30,7 @@ export interface Game {
   activeTrack: Track | null;
   guesses: TrackGuess[];
   guessToActionId: string | null;
+  tokensToBuy: number;
 }
 
 export interface TrackGuess {

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useGameStore } from "./game";
+import { generateRandomString } from "../lib/utility";
 
 export const axiosApi = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
@@ -9,7 +10,7 @@ export const axiosApi = axios.create({
 export const getClientId = () => {
   let clientId = localStorage.getItem("clientId");
   if (!clientId) {
-    clientId = crypto.randomUUID();
+    clientId = generateRandomString(10);
     localStorage.setItem("clientId", clientId);
   }
   return clientId;

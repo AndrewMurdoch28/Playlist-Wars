@@ -51,8 +51,15 @@ export interface TrackGuess {
   artist: string;
 }
 
+export interface Log {
+  timestamp: Date;
+  important: boolean;
+  text: string;
+}
+
 export class Game {
   id: string;
+  logs: Log[];
   players: { [key: string]: Player };
   playlists: string[];
   tracks: Track[];
@@ -62,9 +69,11 @@ export class Game {
   activeTrack: Track | null;
   guesses: TrackGuess[];
   guessToActionId: string | null;
+  tokensToBuy: number;
 
   constructor() {
     this.id = generateRandomString(5);
+    this.logs = [];
     this.players = {};
     this.playlists = [];
     this.tracks = [];
@@ -74,6 +83,7 @@ export class Game {
     this.activeTrack = null;
     this.guesses = [];
     this.guessToActionId = null;
+    this.tokensToBuy = 5;
   }
 
   updateGame(data: Partial<this>) {

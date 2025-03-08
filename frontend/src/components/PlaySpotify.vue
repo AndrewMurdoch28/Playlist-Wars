@@ -1,6 +1,6 @@
 <template>
   <template v-if="!spotifyStore.player || !spotifyStore.isActive">
-    <v-alert width="100vw" max-width="450" type="warning">
+    <v-alert class="mb-1" width="100vw" max-width="450" type="warning">
       Open the spotify app and select
       <span style="font-weight: bolder">{{ spotifyStore.playerName }}</span>
       from the connect to device menu <v-icon>mdi-laptop</v-icon>.
@@ -12,7 +12,7 @@
     color="card"
     width="100vw"
     max-width="450"
-    class="pa-4"
+    class="pa-4 mb-1"
   >
     <v-img
       v-if="!hideDetails && spotifyStore.currentTrack?.album?.images[0]?.url"

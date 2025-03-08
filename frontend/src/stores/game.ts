@@ -132,13 +132,18 @@ export const useGameStore = defineStore("game", () => {
     alertVisible.value = true;
   });
 
-  const getTrackForTimeline = () => {
-    const trackForTimeline =
-      game.value!.tracks[Math.floor(Math.random() * game.value!.tracks.length)];
-    game.value!.tracks = game.value!.tracks.filter(
-      (track) => track.url !== trackForTimeline.url
+  const startGame = (
+    trackList: Track[],
+    startTokens: number,
+    tokensToBuy: number
+  ) => {
+    socket.emit(
+      "startGame",
+      game.value?.id,
+      trackList,
+      startTokens,
+      tokensToBuy
     );
-    return trackForTimeline;
   };
 
   const placeTimelineEntry = (position: number) => {
@@ -158,6 +163,14 @@ export const useGameStore = defineStore("game", () => {
 
   const actionGuess = (action: boolean) => {
     socket.emit("actionGuess", game.value!.id, action);
+  };
+
+  const buySong = () => {
+    socket.emit("buyTimelineEntry", game.value!.id);
+  };
+
+  const buyAnotherSong = () => {
+    socket.emit("buyAnotherSong", game.value!.id);
   };
 
   return {
@@ -183,10 +196,12 @@ export const useGameStore = defineStore("game", () => {
     alertMessage,
     alertType,
     alertVisible,
-    getTrackForTimeline,
+    startGame,
     placeTimelineEntry,
     placeToken,
     guessSong,
     actionGuess,
+    buySong,
+    buyAnotherSong,
   };
 });

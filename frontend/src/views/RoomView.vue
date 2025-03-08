@@ -14,6 +14,12 @@ const loading = ref<boolean>(false);
 const errorMessage = ref<string>("");
 const errorIndex = ref<number | null>();
 
+const startVisible = ref<boolean>(false);
+const startTokens = ref<number>(0);
+const tokensToBuy = ref<number>(5);
+
+const copyIcon = ref<string>("mdi-content-copy");
+
 watch(
   () => gameStore.getPlaylists,
   (newVal) => {
@@ -28,21 +34,7 @@ const startGame = async () => {
   loading.value = true;
   const result = await spotifyStore.readPlaylists(playlistUrls.value);
   if (result.success) {
-    gameStore.game!.tracks = result.trackList;
-    let turnOrderCounter = 0;
-    gameStore.getPlayers?.forEach((player) => {
-      const track = gameStore.getTrackForTimeline();
-      player.timeline.push(track);
-      player.turnOrder = turnOrderCounter;
-      player.tokens = 3; // temp
-      turnOrderCounter++;
-    });
-    gameStore.game!.currentPlayerId = gameStore.getPlayers!.find(
-      (player) => player.turnOrder === 0
-    )!.id;
-    gameStore.game!.activeTrack = gameStore.getTrackForTimeline();
-    gameStore.game!.started = true;
-    await gameStore.update();
+    gameStore.startGame(result.trackList, startTokens.value, tokensToBuy.value);
   } else {
     errorMessage.value = "Failed to fetch playlist. Please check the link.";
     errorIndex.value = result.failedAtIndex!;
@@ -83,9 +75,42 @@ const removePlaylist = (index: number) => {
   updatePlaylists();
   errorIndex.value = null;
 };
+
+const copyId = () => {
+  navigator.clipboard.writeText(gameStore.game!.id);
+  copyIcon.value = "mdi-check";
+  setTimeout(() => (copyIcon.value = "mdi-content-copy"), 1000);
+};
 </script>
 
 <template>
+  <v-dialog v-model="startVisible" width="400">
+    <v-card color="card" class="pa-4 text-center">
+      <v-form>
+        <v-text-field
+          v-model="startTokens"
+          type="number"
+          label="Starting Tokens"
+          min="0"
+          max="30"
+        ></v-text-field>
+        <v-text-field
+          v-model="tokensToBuy"
+          type="number"
+          label="Number of tokens needed to buy song"
+          min="2"
+          max="30"
+        ></v-text-field>
+      </v-form>
+      <v-btn
+        :loading="loading"
+        @click="startGame"
+        class="mt-0"
+        color="green darken-1"
+        ><v-icon left>mdi-play</v-icon>Start Game</v-btn
+      >
+    </v-card>
+  </v-dialog>
   <v-container
     class="fill-height d-flex flex-column align-center justify-center"
   >
@@ -99,6 +124,11 @@ const removePlaylist = (index: number) => {
       >
         <v-card-title class="text-h4 font-weight-bold">
           Game ID: {{ gameStore.game?.id }}
+          <span style="position: absolute; top: 28px"
+            ><v-btn @click="copyId" icon variant="text"
+              ><v-icon>{{ copyIcon }}</v-icon></v-btn
+            ></span
+          >
         </v-card-title>
 
         <div v-for="player in gameStore.getPlayers" :key="player.id">
@@ -163,7 +193,7 @@ const removePlaylist = (index: number) => {
         </div>
 
         <v-btn
-          @click="startGame"
+          @click="startVisible = true"
           :loading="loading"
           :disabled="
             (gameStore.getPlayers ? gameStore.getPlayers.length < 2 : false) ||

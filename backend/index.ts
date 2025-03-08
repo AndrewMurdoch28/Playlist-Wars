@@ -28,7 +28,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: ["*"],
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     credentials: true,
   },
@@ -40,7 +40,7 @@ export const socketWrapper = new SocketWrapper(io);
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: ["*"],
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     credentials: true,
   })
@@ -112,6 +112,6 @@ app.use("/game", gameRouter);
 app.use("/spotify", spotifyRouter);
 
 // Start the server
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
