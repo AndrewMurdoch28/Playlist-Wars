@@ -195,6 +195,25 @@ const getSongYearUrl = (track: Track) => {
 const searchSongYear = (track: Track) => {
   window.open(getSongYearUrl(track), "_blank");
 };
+
+const openSpotifyApp = () => {
+  const trackUrl = gameStore.game?.activeTrack?.url;
+
+  if (trackUrl) {
+    // Convert regular URL to Spotify URI
+    const spotifyUri = trackUrl.replace("https://open.spotify.com/", "spotify://");
+
+    // Try opening in the Spotify app first
+    window.location.href = spotifyUri;
+
+    // Optional: Open in browser if app is not installed (fails silently)
+    setTimeout(() => {
+      window.open(trackUrl, "_blank");
+    }, 1000);
+  } else {
+    console.warn("No track URL available");
+  }
+};
 </script>
 
 <template>
@@ -583,13 +602,19 @@ const searchSongYear = (track: Track) => {
         (gameStore.countdownValue / gameStore.countdownLength) * 100
       "
     ></v-progress-linear> -->
-
     <PlaySpotify :hideDetails="true"></PlaySpotify>
     <v-card
       color="card"
       class="mb-1"
       style="display: flex; flex-direction: column; justify-content: center"
     >
+      <v-btn
+        v-if="!spotifyStore.isActive"
+        @click="openSpotifyApp"
+        color="gray"
+        class="ma-2"
+        >Link to Song</v-btn
+      >
       <div v-if="gameStore.game?.turnState === TurnState.PlaceTimelineEntry">
         <div class="pa-2 text-h5 font-weight-bold">
           {{
