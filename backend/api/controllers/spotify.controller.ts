@@ -12,6 +12,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL!;
 
 const controller = {
   getToken: (req: Request, res: Response) => {
+    console.log("getToken: ", req)
     const accessToken = req.cookies["access_token"];
     if (!accessToken) {
       res.status(401).json({ error: "Unauthorized" });
