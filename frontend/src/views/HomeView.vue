@@ -33,7 +33,6 @@ const playGame = () => {
       <v-divider class="my-4"></v-divider>
       <v-btn
         :loading="loading"
-        :disabled="env !== 'localhost'"
         block
         color="primary"
         size="large"
