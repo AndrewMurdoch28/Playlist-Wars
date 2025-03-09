@@ -39,6 +39,11 @@ export const useSpotifyStore = defineStore("spotify", () => {
     });
   };
 
+  const getAlbumCover = async (url: string) => {
+    const response = await axiosApi.post(`/spotify/albumCover`, { url });
+    return response.data.albumCoverUrl;
+  };
+
   const spotifyClientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
   const spotifyClientSecret = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET;
 
@@ -49,7 +54,9 @@ export const useSpotifyStore = defineStore("spotify", () => {
       new URLSearchParams({ grant_type: "client_credentials" }),
       {
         headers: {
-          Authorization: `Basic ${btoa(`${spotifyClientId}:${spotifyClientSecret}`)}`,
+          Authorization: `Basic ${btoa(
+            `${spotifyClientId}:${spotifyClientSecret}`
+          )}`,
           "Content-Type": "application/x-www-form-urlencoded",
         },
       }
@@ -112,5 +119,6 @@ export const useSpotifyStore = defineStore("spotify", () => {
     readPlaylistsFrontend,
     readPlaylists,
     playTrackFromUrl,
+    getAlbumCover,
   };
 });

@@ -3,6 +3,7 @@ export enum TurnState {
   PendingPlaceTokens = "PendingPlaceTokens",
   PlaceTokens = "PlaceTokens",
   GuessSong = "GuessSong",
+  SongApeal = "SongApeal",
   ActionGuesses = "ActionGuesses",
 }
 
@@ -28,6 +29,7 @@ export interface Game {
   currentPlayerId: string | null;
   turnState: TurnState;
   activeTrack: Track | null;
+  trackApeal: number | null;
   guesses: TrackGuess[];
   guessToActionId: string | null;
   tokensToBuy: number;

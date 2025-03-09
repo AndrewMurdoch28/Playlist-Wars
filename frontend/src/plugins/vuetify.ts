@@ -16,6 +16,7 @@ export default createVuetify({
           error: "#c40606",
           card: "#171716",
           gray: "#757474",
+          token: "#f59842",
         },
       },
     },

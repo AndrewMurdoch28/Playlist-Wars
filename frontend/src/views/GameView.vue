@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { AlertType, Player, TurnState } from "../interfaces/game";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { AlertType, Player, Track, TurnState } from "../interfaces/game";
 import { useGameStore } from "../stores/game";
 import { getReadableColor } from "../lib/utility";
 import PlaySpotify from "../components/PlaySpotify.vue";
@@ -11,14 +11,24 @@ const spotifyStore = useSpotifyStore();
 
 const cardColour = new Map<string, string>();
 
-const guessSongVisible = ref<boolean>(false);
 const guessSongName = ref<string | null>();
 const guessSongArtist = ref<string | null>();
+
+const activeSongVisible = ref<boolean>(false);
+const activeSongCoverImg = ref<string>();
+
+const apealVisible = ref<boolean>(false);
+const apealValue = ref<number | null>();
+const apealForm = ref();
+
+const actionApealVisible = ref<boolean>(false);
 
 const actionGuessVisible = ref<boolean>(false);
 
 const timelineVisible = ref<boolean>(false);
 const selectedPlayerTimeline = ref<Player>();
+
+const logList = ref();
 
 const activeTrackIndex = computed(() =>
   gameStore.getCurrent?.timeline.findIndex(
@@ -27,14 +37,15 @@ const activeTrackIndex = computed(() =>
 );
 
 watch(
-  () => [gameStore.alertVisible, gameStore.game?.turnState],
-  async () => {
+  () => [gameStore.alertVisible, gameStore.game],
+  () => {
+    actionGuessVisible.value = false;
+    activeSongVisible.value = false;
+    actionApealVisible.value = false;
     if (gameStore.game?.turnState === TurnState.PlaceTimelineEntry) {
-      actionGuessVisible.value = false;
       if (gameStore.getCurrent?.id === gameStore.getMe?.id)
         gameStore.showAddBtns = true;
       else gameStore.showAddBtns = false;
-    } else if (gameStore.game?.turnState === TurnState.PendingPlaceTokens) {
     } else if (gameStore.game?.turnState === TurnState.PlaceTokens) {
       if (
         !gameStore.getMe?.ready &&
@@ -42,14 +53,37 @@ watch(
         gameStore.getMe!.tokens > 0
       )
         gameStore.showAddBtns = true;
-    } else if (gameStore.game?.turnState === TurnState.GuessSong) {
-      if (!gameStore.getMe?.ready) guessSongVisible.value = true;
+    } else if (gameStore.game?.turnState === TurnState.SongApeal) {
+      if (gameStore.game.trackApeal) actionApealVisible.value = true;
+      else activeSongVisible.value = true;
     } else if (gameStore.game?.turnState === TurnState.ActionGuesses) {
+      activeSongVisible.value = false;
+      actionApealVisible.value = false;
       if (gameStore.alertVisible !== true) actionGuessVisible.value = true;
       else actionGuessVisible.value = false;
     }
   },
-  { immediate: true }
+  { immediate: true, deep: true }
+);
+
+watch(
+  () => gameStore.game?.turnState,
+  async () => {
+    if (gameStore.game?.turnState === TurnState.SongApeal) {
+      activeSongCoverImg.value = await spotifyStore.getAlbumCover(
+        gameStore.game.activeTrack!.url
+      );
+    }
+  }
+);
+
+watch(
+  () => gameStore.game?.logs,
+  () => {
+    nextTick(() => {
+      logList.value.$el.scrollTop = logList.value.$el.scrollHeight;
+    });
+  }
 );
 
 watch(
@@ -118,9 +152,21 @@ const handleAddBtn = (position: number) => {
 
 const guessSong = () => {
   gameStore.guessSong(guessSongName.value, guessSongArtist.value);
-  guessSongVisible.value = false;
   guessSongName.value = "";
   guessSongArtist.value = "";
+};
+
+const apealSong = async () => {
+  if ((await apealForm.value?.validate()).valid) {
+    gameStore.apealSong(apealValue.value!);
+    apealValue.value = null;
+    apealVisible.value = false;
+    activeSongVisible.value = false;
+  }
+};
+
+const actionApealSong = (action: boolean) => {
+  gameStore.actionApealSong(action);
 };
 
 const actionGuess = (action: boolean) => {
@@ -133,6 +179,22 @@ const showTimeline = (player: Player) => {
 };
 
 const startVoteKick = () => {};
+
+const required = (value: string) =>
+  Array.isArray(value)
+    ? value.length > 0 || "Required."
+    : !!value || "Required.";
+
+const getSongYearUrl = (track: Track) => {
+  const query = encodeURIComponent(
+    `${track.name} By ${track.artist} release year`
+  );
+  return `https://www.google.com/search?q=${query}`;
+};
+
+const searchSongYear = (track: Track) => {
+  window.open(getSongYearUrl(track), "_blank");
+};
 </script>
 
 <template>
@@ -231,7 +293,181 @@ const startVoteKick = () => {};
       </div>
     </v-card>
   </v-dialog>
-  <v-dialog v-model="gameStore.countdownVisible" persistent>
+  <v-dialog v-model="activeSongVisible" persistent max-width="500">
+    <v-card color="card" class="pa-4 text-center">
+      <v-card-title class="text-h6">Active Song Answer</v-card-title>
+      <v-divider class="mb-2"></v-divider>
+      <v-img :src="activeSongCoverImg" height="200"></v-img>
+      <div style="display: flex; justify-content: center">
+        <div>
+          <div style="font-size: 1.5rem; font-weight: bolder">
+            {{ gameStore.game?.activeTrack?.releaseYear }}
+          </div>
+          <div style="font-size: 1rem">
+            {{ gameStore.game?.activeTrack?.name }}
+          </div>
+          <div style="font-size: 1rem">
+            {{ gameStore.game?.activeTrack?.artist }}
+          </div>
+        </div>
+        <v-btn
+          color="#344f91"
+          class="hide-print"
+          icon
+          small
+          @click="searchSongYear(gameStore.game!.activeTrack!)"
+        >
+          <v-icon>mdi-magnify</v-icon>
+        </v-btn>
+      </div>
+      <v-divider class="my-2"></v-divider>
+      <div
+        v-if="gameStore.getMe!.id === gameStore.game?.currentPlayerId"
+        style="
+          display: flex;
+          justify-content: center;
+          gap: 10px;
+          margin-top: 10px;
+          flex-wrap: wrap;
+        "
+      >
+        <v-btn @click="apealVisible = true" color="error" variant="text"
+          >Apeal Release Year</v-btn
+        >
+        <v-btn @click="gameStore.confirmSong" color="primary" variant="text"
+          >Confirm Release Year</v-btn
+        >
+      </div>
+      <div v-else style="font-weight: bolder; font-size: 1.3rem">
+        Waiting on
+        {{ gameStore.game!.players[gameStore.game!.currentPlayerId!].name }}'s
+        Action
+      </div>
+    </v-card>
+  </v-dialog>
+  <v-dialog v-model="apealVisible" max-width="500">
+    <v-card color="card" class="pa-4">
+      <v-card-title class="text-h6 text-center"
+        >Active Song Answer</v-card-title
+      >
+      <v-divider class="mb-2"></v-divider>
+      <v-img :src="activeSongCoverImg" height="200"></v-img>
+      <div style="display: flex; justify-content: center">
+        <div>
+          <div style="font-size: 1.5rem; font-weight: bolder">
+            {{ gameStore.game?.activeTrack?.releaseYear }}
+          </div>
+          <div style="font-size: 1rem">
+            {{ gameStore.game?.activeTrack?.name }}
+          </div>
+          <div style="font-size: 1rem">
+            {{ gameStore.game?.activeTrack?.artist }}
+          </div>
+        </div>
+        <v-btn
+          color="#344f91"
+          class="hide-print"
+          icon
+          small
+          @click="searchSongYear(gameStore.game!.activeTrack!)"
+        >
+          <v-icon>mdi-magnify</v-icon>
+        </v-btn>
+      </div>
+      <v-form ref="apealForm" style="display: flex; justify-content: center">
+        <v-text-field
+          v-model="apealValue"
+          max-width="395"
+          class="px-2 mb-1 mt-2"
+          type="number"
+          :rules="[required]"
+          label="Correct Song Release Year"
+          placeholder="Enter Year"
+        ></v-text-field>
+      </v-form>
+      <v-divider class="mb-2"></v-divider>
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          gap: 10px;
+          margin-top: 10px;
+        "
+      >
+        <v-btn @click="apealVisible = false" color="error" variant="text"
+          >Cancel Apeal</v-btn
+        >
+        <v-btn @click="apealSong" color="primary" variant="text"
+          >Confirm Apeal</v-btn
+        >
+      </div>
+    </v-card>
+  </v-dialog>
+  <v-dialog v-model="actionApealVisible" persistent max-width="400px">
+    <v-card color="card" class="pa-4 text-center">
+      <v-card-title class="text-h6">Apeal Evaluation</v-card-title>
+      <v-divider class="mb-2"></v-divider>
+      <v-img :src="activeSongCoverImg" height="200"></v-img>
+      <div style="display: flex; justify-content: center">
+        <div>
+          <div style="font-size: 1.5rem; font-weight: bolder">
+            {{ gameStore.game?.activeTrack?.releaseYear }}
+          </div>
+          <div style="font-size: 1rem">
+            {{ gameStore.game?.activeTrack?.name }}
+          </div>
+          <div style="font-size: 1rem">
+            {{ gameStore.game?.activeTrack?.artist }}
+          </div>
+        </div>
+        <v-btn
+          color="#344f91"
+          class="hide-print"
+          icon
+          small
+          @click="searchSongYear(gameStore.game!.activeTrack!)"
+          style="position: absolute; right: 20%"
+        >
+          <v-icon>mdi-magnify</v-icon>
+        </v-btn>
+      </div>
+      <v-divider class="my-2"></v-divider>
+      <v-row>
+        <v-col cols="6">Old Release Year:</v-col>
+        <v-col cols="6" style="font-weight: bolder">{{
+          gameStore.game?.activeTrack?.releaseYear
+        }}</v-col>
+      </v-row>
+      <v-divider class="my-2"></v-divider>
+      <v-row>
+        <v-col cols="6">New Release Year:</v-col>
+        <v-col cols="6" style="font-weight: bolder">{{
+          gameStore.game?.trackApeal
+        }}</v-col>
+      </v-row>
+      <v-divider class="my-2"></v-divider>
+      <div
+        v-if="!gameStore.getMe!.ready && gameStore.getMe!.id !== gameStore.game!.players[gameStore.game!.currentPlayerId!].id"
+        style="
+          display: flex;
+          justify-content: center;
+          gap: 10px;
+          margin-top: 10px;
+        "
+      >
+        <v-btn @click="actionApealSong(false)" color="error" variant="text">
+          Deny Apeal
+        </v-btn>
+        <v-btn @click="actionApealSong(true)" color="success" variant="text">
+          Approve Apeal
+        </v-btn>
+      </div>
+      <div v-else style="font-weight: bolder; font-size: 1.3rem">
+        Waiting for Other Players...
+      </div>
+    </v-card>
+  </v-dialog>
+  <v-dialog v-model="gameStore.countdownVisible">
     <v-card color="card" class="pa-4 text-center">
       <div style="font-size: 1.3rem">{{ gameStore.countdownMessage }}</div>
       <div style="font-size: 1.5rem">{{ gameStore.countdownValue }}</div>
@@ -275,22 +511,25 @@ const startVoteKick = () => {};
 
       <v-divider class="my-2"></v-divider>
 
-      <v-card-actions class="justify-center">
-        <v-btn
-          :disabled="gameStore.getMe?.ready"
-          @click="actionGuess(true)"
-          color="success"
-        >
+      <div
+        v-if="!gameStore.getMe?.ready"
+        style="
+          display: flex;
+          justify-content: center;
+          gap: 10px;
+          margin-top: 10px;
+        "
+      >
+        <v-btn @click="actionGuess(true)" color="success" variant="text">
           Guess is Correct
         </v-btn>
-        <v-btn
-          :disabled="gameStore.getMe?.ready"
-          @click="actionGuess(false)"
-          color="error"
-        >
+        <v-btn @click="actionGuess(false)" color="error" variant="text">
           Guess is Incorrect
         </v-btn>
-      </v-card-actions>
+      </div>
+      <div v-else style="font-weight: bolder; font-size: 1.3rem">
+        Waiting for Other Players...
+      </div>
     </v-card>
   </v-dialog>
   <v-container>
@@ -380,7 +619,12 @@ const startVoteKick = () => {};
           }}
         </div>
       </div>
-      <div v-if="guessSongVisible">
+      <div
+        v-if="
+          gameStore.game?.turnState === TurnState.GuessSong &&
+          !gameStore.getMe?.ready
+        "
+      >
         <v-text-field
           v-model="guessSongName"
           max-width="395"
@@ -398,8 +642,12 @@ const startVoteKick = () => {};
           placeholder="Enter Song Artist"
         ></v-text-field>
         <div style="display: flex; justify-content: flex-end; max-width: 395px">
-          <v-btn @click="guessSong" class="mx-2 my-1" color="primary"
-            >Submit</v-btn
+          <v-btn
+            @click="guessSong"
+            class="mx-2 my-2"
+            width="380"
+            color="primary"
+            >Submit Guess</v-btn
           >
         </div>
       </div>
@@ -423,13 +671,13 @@ const startVoteKick = () => {};
           color="primary"
           >Buy Song {{ `(Cost: ${gameStore.game?.tokensToBuy} tokens)` }}</v-btn
         >
-        <v-btn
+        <!-- <v-btn
           v-if="gameStore.getMe!.tokens >= 1 && gameStore.game?.turnState === TurnState.PlaceTimelineEntry"
           @click="gameStore.buyAnotherSong()"
           class="ma-2"
           color="primary"
           >Change Song (Cost 1 Token)</v-btn
-        >
+        > -->
       </div>
     </v-card>
     <v-card color="card" class="mb-1">
@@ -455,13 +703,32 @@ const startVoteKick = () => {};
           v-if="
             gameStore.showAddBtns &&
             gameStore.getCurrent?.timeline[0].url !==
-              gameStore.game?.activeTrack?.url
+              gameStore.game?.activeTrack?.url &&
+            !gameStore.getCurrent?.timelineTokens.some(
+              (token) => token.position === 0
+            )
           "
           @click="handleAddBtn(0)"
           color="primary"
         >
           <span style="font-size: 24px; line-height: 1">+</span>
         </v-btn>
+        <v-card
+          v-if="
+            gameStore.getCurrent?.timelineTokens.some(
+              (token) => token.position === 0
+            )
+          "
+          class="vertical-text"
+          color="token"
+          >{{
+            gameStore.game!.players[
+              gameStore.getCurrent?.timelineTokens.find(
+                (token) => token.position === 0
+              )!.playerId
+            ].name
+          }}</v-card
+        >
         <template
           v-for="(track, index) in gameStore.getCurrent?.timeline"
           :key="track.releaseYear"
@@ -495,7 +762,7 @@ const startVoteKick = () => {};
             v-if="
               gameStore.showAddBtns &&
               (index !== activeTrackIndex) &&
-              (index !== activeTrackIndex! - 1)
+              (index !== activeTrackIndex! - 1) && !gameStore.getCurrent?.timelineTokens.some((token) => token.position === index + 1)
             "
             @click="handleAddBtn(index + 1)"
             color="primary"
@@ -513,7 +780,7 @@ const startVoteKick = () => {};
         <v-card-title class="text-h6">Game Logs</v-card-title>
       </div>
 
-      <v-list bg-color="card" density="compact" max-height="200">
+      <v-list ref="logList" bg-color="card" density="compact" max-height="200">
         <v-list-item v-for="log in gameStore.game?.logs">
           <v-list-item-title class="text-body-2">
             <span style="font-size: 0.7rem; margin-right: 5px">{{
@@ -533,3 +800,15 @@ const startVoteKick = () => {};
     </v-card>
   </v-container>
 </template>
+
+<style>
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  white-space: nowrap;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>

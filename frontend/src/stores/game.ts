@@ -161,6 +161,18 @@ export const useGameStore = defineStore("game", () => {
     socket.emit("guessSong", game.value!.id, name, artist);
   };
 
+  const apealSong = (year: number) => {
+    socket.emit("appealSong", game.value!.id, year);
+  };
+
+  const confirmSong = () => {
+    socket.emit("confirmSong", game.value!.id);
+  };
+
+  const actionApealSong = (action: boolean) => {
+    socket.emit("actionApealSong", game.value!.id, action);
+  };
+
   const actionGuess = (action: boolean) => {
     socket.emit("actionGuess", game.value!.id, action);
   };
@@ -200,6 +212,9 @@ export const useGameStore = defineStore("game", () => {
     placeTimelineEntry,
     placeToken,
     guessSong,
+    apealSong,
+    confirmSong,
+    actionApealSong,
     actionGuess,
     buySong,
     buyAnotherSong,

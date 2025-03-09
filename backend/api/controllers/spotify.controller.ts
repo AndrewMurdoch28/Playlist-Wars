@@ -12,7 +12,6 @@ const FRONTEND_URL = process.env.FRONTEND_URL!;
 
 const controller = {
   getToken: (req: Request, res: Response) => {
-    console.log("getToken: ", req)
     const accessToken = req.cookies["access_token"];
     if (!accessToken) {
       res.status(401).json({ error: "Unauthorized" });
@@ -88,6 +87,34 @@ const controller = {
     } catch (error) {
       console.error("Error playing track:", error);
       res.status(500).send();
+    }
+  },
+  readAlbumCover: async (req: Request, res: Response) => {
+    const accessToken = req.cookies["access_token"];
+    if (!accessToken) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const url = req.body.url;
+    if (!url || !url.match(/track\/([a-zA-Z0-9]+)/)) {
+      res.status(400).json({ error: "Invalid track URL" });
+      return;
+    }
+    const trackId = url.split("/").pop()?.split("?")[0];
+    try {
+      const response = await axios.get(
+        `https://api.spotify.com/v1/tracks/${trackId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      const albumCoverUrl = response.data.album.images[0].url;
+      res.json({ albumCoverUrl });
+    } catch (error) {
+      console.error("Error fetching album cover:", error);
+      res.status(500).json({ error: "Failed to fetch album cover" });
     }
   },
 };
