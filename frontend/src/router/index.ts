@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 const routes = [
-  { path: "/", component: () => import("../views/HomeView.vue") },
   {
     path: "/login",
     component: () => {
@@ -9,28 +8,27 @@ const routes = [
     },
   },
   {
-    path: "/game",
-    children: [
-      {
-        name: "Menu",
-        path: "menu",
-        component: () => import("../views/PlaylistWarsView.vue"),
-      },
-      {
-        name: "RoomView",
-        path: "/room/:gameId",
-        component: () => import("../views/RoomView.vue"),
-      },
-      {
-        name: "GameView",
-        path: "/game/:gameId",
-        component: () => import("../views/GameView.vue"),
-      },
-    ],
+    name: "Menu",
+    path: "/menu",
+    component: () => import("../views/PlaylistWarsView.vue"),
+  },
+  {
+    name: "RoomView",
+    path: "/room/:gameId",
+    component: () => import("../views/RoomView.vue"),
+  },
+  {
+    name: "GameView",
+    path: "/game/:gameId",
+    component: () => import("../views/GameView.vue"),
   },
   {
     path: "/card-generator",
     component: () => import("../views/CardGeneratorView.vue"),
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    component: () => import("../views/HomeView.vue"),
   },
 ];
 

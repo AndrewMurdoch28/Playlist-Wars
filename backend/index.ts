@@ -97,7 +97,7 @@ app.get("/auth/callback", async (req: Request, res: Response) => {
       sameSite: "lax",
       maxAge: 30 * 24 * 3600 * 1000,
     });
-    res.redirect(`${FRONTEND_URL}/game/menu`);
+    res.redirect(`${FRONTEND_URL}/menu`);
   } catch (error) {
     console.error("Error exchanging code:", error);
     res.status(500).send("Error getting token");
