@@ -39,7 +39,7 @@ const playGame = () => {
         class="mb-3"
         @click="playGame"
       >
-        🎵 Play Game (In Developement)
+        🎵 Play Game
       </v-btn>
       <v-btn
         block
