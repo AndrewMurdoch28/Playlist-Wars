@@ -58,11 +58,16 @@ const controller = {
     const clientId = req.get("clientId") as string;
     const gameId = req.params.gameId;
     if (gameId) {
-      socketWrapper.leaveGame(
-        socketWrapper.sockets.get(clientId)!,
-        gameId,
-        clientId
-      );
+      const game = gameDatabase.get(gameId);
+      if (Object.values(game!.players).length) {
+        gameDatabase.delete(gameId);
+      } else {
+        socketWrapper.leaveGame(
+          socketWrapper.sockets.get(clientId)!,
+          gameId,
+          clientId
+        );
+      }
       res.status(200).send(gameId);
     } else {
       res.status(400).send(gameId);
