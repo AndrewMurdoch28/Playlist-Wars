@@ -201,7 +201,10 @@ const openSpotifyApp = () => {
 
   if (trackUrl) {
     // Convert regular URL to Spotify URI
-    const spotifyUri = trackUrl.replace("https://open.spotify.com/", "spotify://");
+    const spotifyUri = trackUrl.replace(
+      "https://open.spotify.com/",
+      "spotify://"
+    );
 
     // Try opening in the Spotify app first
     window.location.href = spotifyUri;
@@ -240,7 +243,7 @@ const openSpotifyApp = () => {
       <v-spacer />
     </v-card>
   </v-menu>
-  <v-dialog v-model="gameStore.alertVisible" width="400">
+  <v-dialog v-model="gameStore.alertVisible" persistent width="400">
     <v-card color="card" class="pa-4 text-center">
       <div style="display: flex">
         <v-icon
@@ -364,7 +367,7 @@ const openSpotifyApp = () => {
       </div>
     </v-card>
   </v-dialog>
-  <v-dialog v-model="apealVisible" max-width="500">
+  <v-dialog v-model="apealVisible" persistent max-width="500">
     <v-card color="card" class="pa-4">
       <v-card-title class="text-h6 text-center"
         >Active Song Answer</v-card-title
@@ -486,7 +489,7 @@ const openSpotifyApp = () => {
       </div>
     </v-card>
   </v-dialog>
-  <v-dialog v-model="gameStore.countdownVisible">
+  <v-dialog v-model="gameStore.countdownVisible" persistent>
     <v-card color="card" class="pa-4 text-center">
       <div style="font-size: 1.3rem">{{ gameStore.countdownMessage }}</div>
       <div style="font-size: 1.5rem">{{ gameStore.countdownValue }}</div>
@@ -794,6 +797,22 @@ const openSpotifyApp = () => {
           >
             <span style="font-size: 24px; line-height: 1">+</span>
           </v-btn>
+          <v-card
+          v-if="
+            gameStore.getCurrent?.timelineTokens.some(
+              (token) => token.position === index + 1
+            )
+          "
+          class="vertical-text"
+          color="token"
+          >{{
+            gameStore.game!.players[
+              gameStore.getCurrent?.timelineTokens.find(
+                (token) => token.position === index + 1
+              )!.playerId
+            ].name
+          }}</v-card
+        >
         </template>
       </div>
     </v-card>
@@ -804,7 +823,6 @@ const openSpotifyApp = () => {
         >
         <v-card-title class="text-h6">Game Logs</v-card-title>
       </div>
-
       <v-list ref="logList" bg-color="card" density="compact" max-height="200">
         <v-list-item v-for="log in gameStore.game?.logs">
           <v-list-item-title class="text-body-2">

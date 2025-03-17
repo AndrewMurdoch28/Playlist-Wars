@@ -90,7 +90,7 @@ export class SocketWrapper {
         if (player.tokens >= game.tokensToBuy) {
           player.tokens = player.tokens - game.tokensToBuy;
           const timelineEntry = this.getTrackForTimeline(game);
-          const correctPositions = this.getCorrectPosition(
+          const correctPositions = this.getCorrectPositions(
             timelineEntry,
             player.timeline
           );
@@ -201,6 +201,94 @@ export class SocketWrapper {
       socket.on("confirmSong", (gameId: string) => {
         let game = gameDatabase.get(gameId);
         if (!game || game.turnState !== TurnState.SongApeal) return;
+        const activeTimeline = game.players[game.currentPlayerId!]!.timeline;
+        const activeTrack = game.activeTrack!;
+        const correctPositions = this.getCorrectPositions(
+          activeTrack,
+          activeTimeline
+        );
+        const activeTrackPosition = game.players[
+          game.currentPlayerId!
+        ]?.timeline.findIndex((track) => track.url === activeTrack.url);
+        const correctAnswerActiveTrack =
+          correctPositions.includes(activeTrackPosition);
+        this.addLog(
+          gameId,
+          `${
+            game.players[game.currentPlayerId!].name
+          } placed the song correctly`,
+          true,
+          true
+        );
+        this.sockets
+          .get(game.players[game.currentPlayerId!]!.id)
+          ?.emit(
+            "alertMessage",
+            correctAnswerActiveTrack
+              ? "Congrats you placed the song correctly!"
+              : "You placed the song incorectly.",
+            correctAnswerActiveTrack ? AlertType.Success : AlertType.Failure
+          );
+        Object.values(game.players).forEach((player) => {
+          if (game.players[game.currentPlayerId!]?.id !== player.id) {
+            this.sockets
+              .get(player.id)
+              ?.emit(
+                "alertMessage",
+                correctAnswerActiveTrack
+                  ? `${
+                      game.players[game.currentPlayerId!]?.name
+                    } placed the song correctly in their timeline.`
+                  : `${
+                      game.players[game.currentPlayerId!]?.name
+                    } placed the song incorrectly in their timeline.`,
+                AlertType.Normal
+              );
+          }
+        });
+        if (!correctAnswerActiveTrack) {
+          for (const token of game.players[game.currentPlayerId!]!
+            .timelineTokens) {
+            const player = game?.players[token.playerId];
+            console.log(activeTrack.name, token.position, correctPositions)
+            if (correctPositions.includes(token.position)) {
+              const stolenSpots = this.getCorrectPositions(
+                activeTrack,
+                player!.timeline
+              );
+              player!.timeline.splice(stolenSpots[0], 0, activeTrack);
+              this.addLog(
+                gameId,
+                `${player.name} placed the token correctly and stole the song`,
+                true
+              );
+              this.sockets
+                .get(player.id)
+                ?.emit(
+                  "alertMessage",
+                  `Congrats you placed the token correctly! You stole that song.`,
+                  AlertType.Success
+                );
+            } else {
+              this.addLog(
+                gameId,
+                `${player.name} placed the token incorrectly`
+              );
+              this.sockets
+                .get(player.id)
+                ?.emit(
+                  "alertMessage",
+                  `You placed the token incorrectly.`,
+                  AlertType.Failure
+                );
+            }
+          }
+          game.players[game.currentPlayerId!]?.timeline.splice(
+            activeTrackPosition!,
+            1
+          );
+        }
+        game.players[game.currentPlayerId!]!.timelineTokens = [];
         if (game.guesses.length > 0) {
           game.turnState = TurnState.ActionGuesses;
           game.guessToActionId = game.guesses[0].playerId;
@@ -208,7 +296,6 @@ export class SocketWrapper {
         } else {
           this.nextTurn(game);
         }
-        this.emitToRoom("updated", gameId, game);
       });
 
       socket.on("actionApealSong", (gameId: string, action: boolean) => {
@@ -271,7 +358,7 @@ export class SocketWrapper {
           this.emitToRoom("updated", gameId, game);
           const activeTimeline = game.players[game.currentPlayerId!]!.timeline;
           const activeTrack = game.activeTrack!;
-          const correctPositions = this.getCorrectPosition(
+          const correctPositions = this.getCorrectPositions(
             activeTrack,
             activeTimeline
           );
@@ -314,21 +401,16 @@ export class SocketWrapper {
                 );
             }
           });
-
           if (!correctAnswerActiveTrack) {
             for (const token of game.players[game.currentPlayerId!]!
               .timelineTokens) {
               const player = game?.players[token.playerId];
               if (correctPositions.includes(token.position)) {
-                const tokenCorrectPositions = this.getCorrectPosition(
+                const stolenSpots = this.getCorrectPositions(
                   activeTrack,
                   player!.timeline
                 );
-                player!.timeline.splice(
-                  tokenCorrectPositions[0],
-                  0,
-                  activeTrack
-                );
+                player!.timeline.splice(stolenSpots[0], 0, activeTrack);
                 this.addLog(
                   gameId,
                   `${player.name} placed the token correctly and stole the song`,
@@ -359,8 +441,8 @@ export class SocketWrapper {
               activeTrackPosition!,
               1
             );
-            game.players[game.currentPlayerId!]!.timelineTokens = [];
           }
+          game.players[game.currentPlayerId!]!.timelineTokens = [];
           if (game.guesses.length > 0) {
             game.turnState = TurnState.ActionGuesses;
             game.guessToActionId = game.guesses[0].playerId;
@@ -438,6 +520,8 @@ export class SocketWrapper {
     });
   }
 
+  resolveActiveTrack() {}
+
   nextTurn(game: Game) {
     const findNextTurn = Object.values(game.players).find(
       (player) =>
@@ -477,21 +561,60 @@ export class SocketWrapper {
     return trackForTimeline;
   }
 
-  getCorrectPosition(activeTrack: Track, timeline: Track[]): number[] {
-    if (!activeTrack || !timeline.length) return [];
-    const tempTimeline = timeline.filter(
-      (track) => track.url !== activeTrack.url
-    );
+  /**
+   * Finds all valid positions to insert a track into a timeline based on release year
+   * @param activeTrack The track to be positioned
+   * @param timeline Array of tracks in chronological order
+   * @returns Array of valid position indices
+   */
+  getCorrectPositions(activeTrack: Track, timeline: Track[]) {
+    // Handle null/undefined inputs
+    if (!activeTrack || !Array.isArray(timeline) || timeline.length === 0) {
+      return [0]; // Default to position 0 for empty timeline
+    }
+
+    // Validate that activeTrack has necessary properties
     const activeYear = activeTrack.releaseYear;
-    if (!tempTimeline.length) return [0];
+    const activeUrl = activeTrack.url;
+
+    if (activeYear === undefined || activeYear === null) {
+      return [0]; // Default to position 0 if no release year
+    }
+
+    // Filter out tracks with the same URL (handles duplicate URLs)
+    const tempTimeline = activeUrl
+      ? timeline.filter((track) => track.url !== activeUrl)
+      : [...timeline];
+
+    // If timeline is empty after filtering, insert at position 0
+    if (tempTimeline.length === 0) {
+      return [0];
+    }
+
+    // Ensure timeline is sorted by release year
+    const sortedTimeline = [...tempTimeline].sort((a, b) => {
+      const yearA = a.releaseYear ?? Infinity;
+      const yearB = b.releaseYear ?? Infinity;
+      return yearA - yearB;
+    });
+
     const positions: number[] = [];
-    for (let i = 0; i <= tempTimeline.length; i++) {
-      const prevYear = tempTimeline[i - 1]?.releaseYear ?? -Infinity;
-      const nextYear = tempTimeline[i]?.releaseYear ?? Infinity;
-      if (activeYear >= prevYear && activeYear <= nextYear) {
+
+    // Check each possible position
+    for (let i = 0; i <= sortedTimeline.length; i++) {
+      const prevYear = sortedTimeline[i - 1]?.releaseYear ?? -Infinity;
+      const nextYear = sortedTimeline[i]?.releaseYear ?? Infinity;
+      // Handle tracks with missing release years safely
+      if (
+        (activeYear >= prevYear ||
+          prevYear === undefined ||
+          prevYear === null) &&
+        (activeYear <= nextYear || nextYear === undefined || nextYear === null)
+      ) {
         positions.push(i);
       }
     }
+
     return positions;
   }
 

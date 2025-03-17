@@ -15,7 +15,7 @@ const errorMessage = ref<string>("");
 const errorIndex = ref<number | null>();
 
 const startVisible = ref<boolean>(false);
-const startTokens = ref<number>(0);
+const startTokens = ref<number>(1);
 const tokensToBuy = ref<number>(5);
 
 const copyIcon = ref<string>("mdi-content-copy");
