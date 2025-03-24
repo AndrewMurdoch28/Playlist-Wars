@@ -152,7 +152,7 @@ export class SocketWrapper {
             Object.values(game.players).every(
               (player) =>
                 player.ready ||
-                player.id === game.players[game.currentPlayerId!]!.id
+                player.id === game.players[game.currentPlayerId!]!.id || player.tokens === 0
             )
           ) {
             Object.values(game.players).forEach(

@@ -59,15 +59,14 @@ const controller = {
     const gameId = req.params.gameId;
     if (gameId) {
       const game = gameDatabase.get(gameId);
-      if (Object.values(game!.players).length) {
+      if (Object.values(game!.players).length <= 1) {
         gameDatabase.delete(gameId);
-      } else {
-        socketWrapper.leaveGame(
-          socketWrapper.sockets.get(clientId)!,
-          gameId,
-          clientId
-        );
       }
+      socketWrapper.leaveGame(
+        socketWrapper.sockets.get(clientId)!,
+        gameId,
+        clientId
+      );
       res.status(200).send(gameId);
     } else {
       res.status(400).send(gameId);

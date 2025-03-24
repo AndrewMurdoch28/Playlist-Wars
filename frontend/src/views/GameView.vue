@@ -630,10 +630,10 @@ const openSpotifyApp = () => {
       <div v-if="gameStore.game?.turnState === TurnState.PlaceTokens">
         <div class="pa-2 text-h5 font-weight-bold">
           {{
-            gameStore.getMe?.id === gameStore.getCurrent?.id
+            gameStore.getMe?.id === gameStore.getCurrent?.id ||
+            gameStore.getMe?.ready ||
+            gameStore.getMe?.tokens === 0
               ? "Waiting for players to place tokens."
-              : gameStore.getMe?.ready
-              ? "Waiting on other players."
               : "Place tokens to try and steal!"
           }}
         </div>
@@ -747,15 +747,22 @@ const openSpotifyApp = () => {
               (token) => token.position === 0
             )
           "
-          class="vertical-text"
+          rounded="pill"
+          elevation="5"
+          max-width="150"
+          max-height="150"
           color="token"
-          >{{
-            gameStore.game!.players[
-              gameStore.getCurrent?.timelineTokens.find(
-                (token) => token.position === 0
-              )!.playerId
-            ].name
-          }}</v-card
+          style="text-align: center"
+          ><v-card-title> Steal Token </v-card-title
+          ><v-card-text>
+            {{
+              gameStore.game!.players[
+                gameStore.getCurrent?.timelineTokens.find(
+                  (token) => token.position === 0
+                )!.playerId
+              ].name
+            }}
+          </v-card-text></v-card
         >
         <template
           v-for="(track, index) in gameStore.getCurrent?.timeline"
@@ -798,21 +805,28 @@ const openSpotifyApp = () => {
             <span style="font-size: 24px; line-height: 1">+</span>
           </v-btn>
           <v-card
-          v-if="
-            gameStore.getCurrent?.timelineTokens.some(
-              (token) => token.position === index + 1
-            )
-          "
-          class="vertical-text"
-          color="token"
-          >{{
-            gameStore.game!.players[
-              gameStore.getCurrent?.timelineTokens.find(
-                (token) => token.position === index + 1
-              )!.playerId
-            ].name
-          }}</v-card
-        >
+            v-if="
+              gameStore.getCurrent?.timelineTokens.some(
+                (token) => token.position === 0
+              )
+            "
+            rounded="pill"
+            elevation="5"
+            max-width="150"
+            max-height="150"
+            color="token"
+            style="text-align: center"
+            ><v-card-title> Steal Token </v-card-title
+            ><v-card-text>
+              {{
+                gameStore.game!.players[
+                  gameStore.getCurrent?.timelineTokens.find(
+                    (token) => token.position === index + 1
+                  )!.playerId
+                ].name
+              }}
+            </v-card-text></v-card
+          >
         </template>
       </div>
     </v-card>
