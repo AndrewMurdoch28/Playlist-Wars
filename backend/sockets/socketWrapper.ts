@@ -51,7 +51,7 @@ export class SocketWrapper {
           let shuffledPlayers = players.sort(() => Math.random() - 0.5);
           shuffledPlayers.forEach((player, index) => {
             const track = this.getTrackForTimeline(game);
-            player.timeline.push(track);
+            if (track) player.timeline.push(track);
             player.turnOrder = index;
             player.tokens = startTokens;
           });
@@ -77,7 +77,9 @@ export class SocketWrapper {
           player.tokens--;
           const newTrack = this.getTrackForTimeline(game);
           game.activeTrack = newTrack;
-          this.emitToRoom("changeSong", game.id, game.activeTrack.url);
+          if (game.activeTrack) {
+            this.emitToRoom("changeSong", game.id, game.activeTrack.url);
+          }
           this.addLog(gameId, `${player.name} changed the active song`, true);
           this.emitToRoom("updated", gameId, game);
         }
@@ -90,11 +92,13 @@ export class SocketWrapper {
         if (player.tokens >= game.tokensToBuy) {
           player.tokens = player.tokens - game.tokensToBuy;
           const timelineEntry = this.getTrackForTimeline(game);
-          const correctPositions = this.getCorrectPositions(
-            timelineEntry,
-            player.timeline
-          );
-          player.timeline.splice(correctPositions[0], 0, timelineEntry);
+          if (timelineEntry) {
+            const correctPositions = this.getCorrectPositions(
+              timelineEntry,
+              player.timeline
+            );
+            player.timeline.splice(correctPositions[0], 0, timelineEntry);
+          }
           this.addLog(gameId, `${player.name} bought Song`, true);
           this.emitToRoom("updated", gameId, game);
         }
@@ -152,7 +156,8 @@ export class SocketWrapper {
             Object.values(game.players).every(
               (player) =>
                 player.ready ||
-                player.id === game.players[game.currentPlayerId!]!.id || player.tokens === 0
+                player.id === game.players[game.currentPlayerId!]!.id ||
+                player.tokens === 0
             )
           ) {
             Object.values(game.players).forEach(
@@ -250,7 +255,6 @@ export class SocketWrapper {
           for (const token of game.players[game.currentPlayerId!]!
             .timelineTokens) {
             const player = game?.players[token.playerId];
-            console.log(activeTrack.name, token.position, correctPositions)
             if (correctPositions.includes(token.position)) {
               const stolenSpots = this.getCorrectPositions(
                 activeTrack,
@@ -547,12 +551,18 @@ export class SocketWrapper {
     );
     game.guesses = [];
     game.activeTrack = this.getTrackForTimeline(game);
-    this.emitToRoom("changeSong", game.id, game.activeTrack.url);
+    if (game.activeTrack) {
+      this.emitToRoom("changeSong", game.id, game.activeTrack.url);
+    }
     game.turnState = TurnState.PlaceTimelineEntry;
     this.emitToRoom("updated", game.id, game);
   }
 
   getTrackForTimeline(game: Game) {
+    if (game!.tracks.length === 0) {
+      return null;
+    }
+
     const trackForTimeline =
       game!.tracks[Math.floor(Math.random() * game!.tracks.length)];
     game!.tracks = game!.tracks.filter(

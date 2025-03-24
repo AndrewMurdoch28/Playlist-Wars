@@ -1,6 +1,7 @@
 interface Window {
   onSpotifyWebPlaybackSDKReady(): void;
   Spotify: typeof Spotify;
+  MSStream: any;
 }
 
 declare namespace Spotify {

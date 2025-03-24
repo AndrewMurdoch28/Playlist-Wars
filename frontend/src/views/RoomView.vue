@@ -2,7 +2,7 @@
 import { useGameStore } from "../stores/game";
 import { ref, watch } from "vue";
 import { useSpotifyStore } from "../stores/spotify";
-import PlaySpotify from "../components/PlaySpotify.vue";
+import SpotifyPlayer from "../components/SpotifyPlayer.vue"
 
 const gameStore = useGameStore();
 const spotifyStore = useSpotifyStore();
@@ -16,7 +16,7 @@ const errorIndex = ref<number | null>();
 
 const startVisible = ref<boolean>(false);
 const startTokens = ref<number>(1);
-const tokensToBuy = ref<number>(5);
+const tokensToBuy = ref<number>(3);
 
 const copyIcon = ref<string>("mdi-content-copy");
 
@@ -210,7 +210,7 @@ const copyId = () => {
           <v-icon left>mdi-exit-to-app</v-icon> Leave Game
         </v-btn>
       </v-card>
-      <PlaySpotify :hideDetails="false"></PlaySpotify>
+      <SpotifyPlayer :hideDetails="false"></SpotifyPlayer>
     </div>
   </v-container>
 </template>

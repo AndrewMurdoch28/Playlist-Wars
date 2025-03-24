@@ -124,11 +124,13 @@ export const useGameStore = defineStore("game", () => {
   const alertMessage = ref<string[]>([]);
   const alertType = ref<AlertType[]>([]);
   const alertVisible = ref<boolean>(false);
+  const alertCallback = ref<Function>(() => {});
 
   socket.on("alertMessage", (message: string, type: AlertType) => {
     console.log("alert message", message, type);
     alertMessage.value.push(message);
     alertType.value?.push(type);
+    alertCallback.value = () => {};
     alertVisible.value = true;
   });
 
@@ -207,6 +209,7 @@ export const useGameStore = defineStore("game", () => {
     leave,
     alertMessage,
     alertType,
+    alertCallback,
     alertVisible,
     startGame,
     placeTimelineEntry,

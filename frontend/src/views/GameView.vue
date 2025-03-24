@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { AlertType, Player, Track, TurnState } from "../interfaces/game";
 import { useGameStore } from "../stores/game";
 import { getReadableColor } from "../lib/utility";
-import PlaySpotify from "../components/PlaySpotify.vue";
 import { useSpotifyStore } from "../stores/spotify";
+import SpotifyPlayer from "../components/SpotifyPlayer.vue";
 
 const gameStore = useGameStore();
 const spotifyStore = useSpotifyStore();
 
 const cardColour = new Map<string, string>();
+
+const spotifyPlayerVisible = ref<boolean>(true);
 
 const guessSongName = ref<string | null>();
 const guessSongArtist = ref<string | null>();
@@ -42,6 +44,15 @@ watch(
     actionGuessVisible.value = false;
     activeSongVisible.value = false;
     actionApealVisible.value = false;
+    if (gameStore.game?.tracks.length === 0) {
+      gameStore.alertMessage.push(
+        "This game has run out of spotify songs to play from the playlists you provided the game will now end."
+      );
+      gameStore.alertType.push(AlertType.Normal);
+      gameStore.alertCallback = () => {
+        gameStore.leave();
+      };
+    }
     if (gameStore.game?.turnState === TurnState.PlaceTimelineEntry) {
       if (gameStore.getCurrent?.id === gameStore.getMe?.id)
         gameStore.showAddBtns = true;
@@ -87,9 +98,12 @@ watch(
 );
 
 watch(
-  () => [spotifyStore.isActive],
+  () => spotifyStore.playerState?.device.is_active,
   () => {
-    if (gameStore.game?.activeTrack && spotifyStore.isActive) {
+    if (
+      gameStore.game?.activeTrack &&
+      spotifyStore.playerState?.device.is_active
+    ) {
       spotifyStore.playTrackFromUrl(gameStore.game!.activeTrack!.url);
     }
   },
@@ -132,6 +146,11 @@ watch(
     }
   }
 );
+
+const alertOk = () => {
+  gameStore.alertVisible = false;
+  gameStore.alertCallback();
+};
 
 const pass = () => {
   if (gameStore.game?.turnState === TurnState.PlaceTokens) {
@@ -236,6 +255,14 @@ const openSpotifyApp = () => {
           Game ID: {{ gameStore.game?.id }}
         </div>
       </v-row>
+      <v-list-item @click="spotifyPlayerVisible = !spotifyPlayerVisible">
+        <v-icon color="blue" :class="`mr-3 gl-n13`">{{
+          spotifyPlayerVisible ? "mdi-eye-off" : "mdi-eye"
+        }}</v-icon>
+        <span class="pr-2">{{
+          spotifyPlayerVisible ? "Hide Spotify Player" : "Show Spotify Player"
+        }}</span>
+      </v-list-item>
       <v-list-item @click="gameStore.leave()">
         <v-icon color="red darken-1" :class="`mr-3 gl-n13`">mdi-logout</v-icon>
         <span class="pr-2">Leave Game</span>
@@ -262,9 +289,7 @@ const openSpotifyApp = () => {
           {{ gameStore.alertMessage[0] }}
         </div>
       </div>
-      <v-btn class="mt-4" color="white" @click="gameStore.alertVisible = false"
-        >OK</v-btn
-      >
+      <v-btn class="mt-4" color="white" @click="alertOk">OK</v-btn>
     </v-card>
   </v-dialog>
   <v-dialog v-model="timelineVisible">
@@ -414,6 +439,7 @@ const openSpotifyApp = () => {
           justify-content: center;
           gap: 10px;
           margin-top: 10px;
+          flex-wrap: wrap;
         "
       >
         <v-btn @click="apealVisible = false" color="error" variant="text"
@@ -425,7 +451,7 @@ const openSpotifyApp = () => {
       </div>
     </v-card>
   </v-dialog>
-  <v-dialog v-model="actionApealVisible" persistent max-width="400px">
+  <v-dialog v-model="actionApealVisible" persistent max-width="500">
     <v-card color="card" class="pa-4 text-center">
       <v-card-title class="text-h6">Apeal Evaluation</v-card-title>
       <v-divider class="mb-2"></v-divider>
@@ -475,6 +501,7 @@ const openSpotifyApp = () => {
           justify-content: center;
           gap: 10px;
           margin-top: 10px;
+          flex-wrap: wrap;
         "
       >
         <v-btn @click="actionApealSong(false)" color="error" variant="text">
@@ -500,7 +527,7 @@ const openSpotifyApp = () => {
       ></v-progress-linear>
     </v-card>
   </v-dialog>
-  <v-dialog v-model="actionGuessVisible" persistent max-width="400px">
+  <v-dialog v-model="actionGuessVisible" persistent max-width="500">
     <v-card color="card" class="pa-4 text-center">
       <v-card-title class="text-h6">Guess Evaluation</v-card-title>
       <v-divider class="mb-2"></v-divider>
@@ -540,6 +567,7 @@ const openSpotifyApp = () => {
           justify-content: center;
           gap: 10px;
           margin-top: 10px;
+          flex-wrap: wrap;
         "
       >
         <v-btn @click="actionGuess(true)" color="success" variant="text">
@@ -605,14 +633,14 @@ const openSpotifyApp = () => {
         (gameStore.countdownValue / gameStore.countdownLength) * 100
       "
     ></v-progress-linear> -->
-    <PlaySpotify :hideDetails="true"></PlaySpotify>
+    <SpotifyPlayer v-show="spotifyPlayerVisible" :hideDetails="true"></SpotifyPlayer>
     <v-card
       color="card"
       class="mb-1"
       style="display: flex; flex-direction: column; justify-content: center"
     >
       <v-btn
-        v-if="!spotifyStore.isActive"
+        v-if="!spotifyStore.playerState?.device.is_active"
         @click="openSpotifyApp"
         color="gray"
         class="ma-2"
@@ -655,7 +683,6 @@ const openSpotifyApp = () => {
       >
         <v-text-field
           v-model="guessSongName"
-          max-width="395"
           class="px-2 mb-1 mt-2"
           hide-details
           label="Song Name"
@@ -663,21 +690,18 @@ const openSpotifyApp = () => {
         ></v-text-field>
         <v-text-field
           v-model="guessSongArtist"
-          max-width="395"
           class="px-2"
           hide-details
           label="Song Artist"
           placeholder="Enter Song Artist"
         ></v-text-field>
-        <div style="display: flex; justify-content: flex-end; max-width: 395px">
-          <v-btn
-            @click="guessSong"
-            class="mx-2 my-2"
-            width="380"
-            color="primary"
-            >Submit Guess</v-btn
-          >
-        </div>
+        <v-btn
+          @click="guessSong"
+          class="mx-2 my-2"
+          color="primary"
+          style="width: calc(100% - 15px)"
+          >Submit Guess</v-btn
+        >
       </div>
       <v-btn
         v-if="
@@ -741,29 +765,32 @@ const openSpotifyApp = () => {
         >
           <span style="font-size: 24px; line-height: 1">+</span>
         </v-btn>
-        <v-card
+        <div
           v-if="
             gameStore.getCurrent?.timelineTokens.some(
               (token) => token.position === 0
             )
           "
-          rounded="pill"
-          elevation="5"
-          max-width="150"
-          max-height="150"
-          color="token"
-          style="text-align: center"
-          ><v-card-title> Steal Token </v-card-title
-          ><v-card-text>
-            {{
-              gameStore.game!.players[
-                gameStore.getCurrent?.timelineTokens.find(
-                  (token) => token.position === 0
-                )!.playerId
-              ].name
-            }}
-          </v-card-text></v-card
         >
+          <v-card
+            rounded="pill"
+            elevation="5"
+            max-width="150"
+            max-height="150"
+            color="token"
+            style="text-align: center"
+            ><v-card-title> Steal Token </v-card-title
+            ><v-card-text>
+              {{
+                gameStore.game!.players[
+                  gameStore.getCurrent?.timelineTokens.find(
+                    (token) => token.position === 0
+                  )!.playerId
+                ].name
+              }}
+            </v-card-text></v-card
+          >
+        </div>
         <template
           v-for="(track, index) in gameStore.getCurrent?.timeline"
           :key="track.releaseYear"
@@ -804,29 +831,32 @@ const openSpotifyApp = () => {
           >
             <span style="font-size: 24px; line-height: 1">+</span>
           </v-btn>
-          <v-card
+          <div
             v-if="
               gameStore.getCurrent?.timelineTokens.some(
-                (token) => token.position === 0
+                (token) => token.position === index + 1
               )
             "
-            rounded="pill"
-            elevation="5"
-            max-width="150"
-            max-height="150"
-            color="token"
-            style="text-align: center"
-            ><v-card-title> Steal Token </v-card-title
-            ><v-card-text>
-              {{
-                gameStore.game!.players[
-                  gameStore.getCurrent?.timelineTokens.find(
-                    (token) => token.position === index + 1
-                  )!.playerId
-                ].name
-              }}
-            </v-card-text></v-card
           >
+            <v-card
+              rounded="pill"
+              elevation="5"
+              max-width="150"
+              max-height="150"
+              color="token"
+              style="text-align: center"
+              ><v-card-title> Steal Token </v-card-title
+              ><v-card-text>
+                {{
+                  gameStore.game!.players[
+                    gameStore.getCurrent?.timelineTokens.find(
+                      (token) => token.position === index + 1
+                    )!.playerId
+                  ].name
+                }}
+              </v-card-text></v-card
+            >
+          </div>
         </template>
       </div>
     </v-card>

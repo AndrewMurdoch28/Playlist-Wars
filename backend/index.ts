@@ -52,7 +52,7 @@ app.use(cookieParser());
  * SPOTIFY_REDIRECT_URI gets an illegal redirect_uri error when putting the callback route inside a router file
  */
 app.get("/auth/login", (req, res) => {
-  const scope = "streaming user-read-email user-read-private";
+  const scope = "user-modify-playback-state user-read-playback-state";
   const state = generateRandomString(16);
   const authQueryParameters = new URLSearchParams({
     response_type: "code",
