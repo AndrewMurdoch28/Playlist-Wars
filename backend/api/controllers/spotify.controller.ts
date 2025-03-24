@@ -1,18 +1,10 @@
 import { Request, Response } from "express";
-import { socketWrapper } from "../../index";
-import { generateRandomString } from "@/lib/utils";
 import axios from "axios";
-import qs from "qs";
 import { Track } from "@/database/game.data";
-
-const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
-const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
-const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI!;
-const FRONTEND_URL = process.env.FRONTEND_URL!;
 
 const controller = {
   getToken: (req: Request, res: Response) => {
-    const accessToken = req.cookies["access_token"];
+    const accessToken = req.get("access_token") as string;
     if (!accessToken) {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -20,7 +12,7 @@ const controller = {
     res.json({ access_token: accessToken });
   },
   getPlaylists: async (req: Request, res: Response) => {
-    const accessToken = req.cookies["access_token"];
+    const accessToken = req.get("access_token") as string;
     if (!accessToken) {
       res.status(401).json({ success: false, error: "Unauthorized" });
       return;
@@ -59,7 +51,7 @@ const controller = {
     }
   },
   playSong: async (req: Request, res: Response) => {
-    const accessToken = req.cookies["access_token"];
+    const accessToken = req.get("access_token") as string;
     const url = req.body.url;
     const deviceId = req.body.deviceId;
     const match = url.match(/track\/([a-zA-Z0-9]+)/);
@@ -90,7 +82,7 @@ const controller = {
     }
   },
   readAlbumCover: async (req: Request, res: Response) => {
-    const accessToken = req.cookies["access_token"];
+    const accessToken = req.get("access_token") as string;
     if (!accessToken) {
       res.status(401).json({ error: "Unauthorized" });
       return;

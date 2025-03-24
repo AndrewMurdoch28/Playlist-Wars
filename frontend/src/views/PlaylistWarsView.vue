@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useGameStore } from "../stores/game";
 import JoinRoom from "../components/JoinGame.vue";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { router } from "../router";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
 
 const gameStore = useGameStore();
 
@@ -11,6 +14,20 @@ const joinLobbyVisible = ref<boolean>(false);
 const create = async () => {
   await gameStore.create();
 };
+
+onMounted(() => {
+  const { access_token, refresh_token, expires_in } = route.query;
+
+  if (access_token && refresh_token && expires_in) {
+    localStorage.setItem("access_token", access_token as string);
+    localStorage.setItem("refresh_token", refresh_token as string);
+    localStorage.setItem("expires_in", expires_in as string);
+
+    console.log("access_token", access_token)
+
+    router.replace({ path: "/menu" });
+  }
+});
 </script>
 
 <template>

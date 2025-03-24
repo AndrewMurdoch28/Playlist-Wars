@@ -85,19 +85,20 @@ app.get("/auth/callback", async (req: Request, res: Response) => {
         },
       }
     );
-    res.cookie("access_token", response.data.access_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 3600 * 1000,
-    });
-    res.cookie("refresh_token", response.data.refresh_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 30 * 24 * 3600 * 1000,
-    });
-    res.redirect(`${FRONTEND_URL}/menu`);
+    // res.cookie("access_token", response.data.access_token, {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "none",
+    //   maxAge: 3600 * 1000,
+    // });
+    // res.cookie("refresh_token", response.data.refresh_token, {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "none",
+    //   maxAge: 30 * 24 * 3600 * 1000,
+    // });
+    const redirectUrl = `${FRONTEND_URL}/menu?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}&expires_in=${response.data.expires_in}`;
+    res.redirect(redirectUrl);
   } catch (error) {
     console.error("Error exchanging code:", error);
     res.status(500).send("Error getting token");

@@ -20,5 +20,6 @@ axiosApi.interceptors.request.use((config) => {
   const gameStore = useGameStore();
   config.headers["socketId"] = gameStore.socket.id;
   config.headers["clientId"] = getClientId();
+  config.headers["access_token"] = localStorage.getItem("access_token");
   return config;
 });
