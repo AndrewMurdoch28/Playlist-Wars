@@ -67,6 +67,7 @@ const controller = {
         gameId,
         clientId
       );
+      console.log(`games: ${gameDatabase.getAll().size}`);
       res.status(200).send(gameId);
     } else {
       res.status(400).send(gameId);

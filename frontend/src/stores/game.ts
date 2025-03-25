@@ -74,10 +74,6 @@ export const useGameStore = defineStore("game", () => {
     else router.replace({ name: "RoomView", params: { gameId: data.id } });
   });
 
-  socket.on("left", (data: Game) => {
-    game.value = data;
-  });
-
   socket.on("updated", (data: Game) => {
     game.value = data;
     if (data.started)
@@ -85,7 +81,7 @@ export const useGameStore = defineStore("game", () => {
   });
 
   socket.on("changeSong", (url: string) => {
-    spotifyStore.playTrackFromUrl(url);
+    spotifyStore.playTrack(url);
   });
 
   const showAddBtns = ref<boolean>(false);

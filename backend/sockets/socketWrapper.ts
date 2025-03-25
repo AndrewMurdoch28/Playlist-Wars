@@ -32,7 +32,7 @@ export class SocketWrapper {
         const result = gameDatabase.gameForPlayer(clientId);
         if (result) {
           result.playerConnection(clientId, false);
-          this.emitToRoom("left", result.id, result);
+          this.emitToRoom("updated", result.id, result);
         }
       });
 
@@ -71,7 +71,7 @@ export class SocketWrapper {
 
       socket.on("buyAnotherSong", (gameId: string) => {
         let game = gameDatabase.get(gameId);
-        if (!game || game.turnState === TurnState.PlaceTimelineEntry) return;
+        if (!game || game.turnState !== TurnState.PlaceTimelineEntry) return;
         const player = game.players[clientId];
         if (player.tokens >= 1) {
           player.tokens--;
@@ -189,6 +189,11 @@ export class SocketWrapper {
           if (game.arePlayersReady()) {
             Object.values(game.players).forEach(
               (player) => (player.ready = false)
+            );
+            this.addLog(
+              gameId,
+              `Active song answer: ${game.activeTrack?.releaseYear} | ${game.activeTrack?.name} | ${game.activeTrack?.artist}`,
+              true
             );
             game.turnState = TurnState.SongApeal;
             this.emitToRoom("updated", gameId, game);
@@ -584,7 +589,7 @@ export class SocketWrapper {
     }
 
     // Validate that activeTrack has necessary properties
-    const activeYear = activeTrack.releaseYear;
+    const activeYear = parseInt(activeTrack.releaseYear as any);
     const activeUrl = activeTrack.url;
 
     if (activeYear === undefined || activeYear === null) {
@@ -615,16 +620,10 @@ export class SocketWrapper {
       const prevYear = sortedTimeline[i - 1]?.releaseYear ?? -Infinity;
       const nextYear = sortedTimeline[i]?.releaseYear ?? Infinity;
       // Handle tracks with missing release years safely
-      if (
-        (activeYear >= prevYear ||
-          prevYear === undefined ||
-          prevYear === null) &&
-        (activeYear <= nextYear || nextYear === undefined || nextYear === null)
-      ) {
+      if (activeYear >= prevYear && activeYear <= nextYear) {
         positions.push(i);
       }
     }
-
     return positions;
   }
 

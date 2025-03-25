@@ -2,7 +2,7 @@
 import { useGameStore } from "../stores/game";
 import { ref, watch } from "vue";
 import { useSpotifyStore } from "../stores/spotify";
-import SpotifyPlayer from "../components/SpotifyPlayer.vue"
+import SpotifyPlayer from "../components/SpotifyPlayer.vue";
 
 const gameStore = useGameStore();
 const spotifyStore = useSpotifyStore();
@@ -12,7 +12,7 @@ const timeout = ref();
 const playlistUrls = ref<string[]>(gameStore.getPlaylists || []);
 const loading = ref<boolean>(false);
 const errorMessage = ref<string>("");
-const errorIndex = ref<number | null>();
+const errorIndex = ref<number | true | null>();
 
 const startVisible = ref<boolean>(false);
 const startTokens = ref<number>(1);
@@ -32,6 +32,8 @@ watch(
 
 const startGame = async () => {
   loading.value = true;
+  errorIndex.value = null;
+  startVisible.value = false;
   const result = await spotifyStore.readPlaylists(playlistUrls.value);
   if (result.success) {
     gameStore.startGame(result.trackList, startTokens.value, tokensToBuy.value);
@@ -50,7 +52,7 @@ const onInputChange = (fn: Function) => {
   clearTimeout(timeout.value);
   timeout.value = setTimeout(() => {
     fn();
-  }, 300);
+  }, 1000);
 };
 
 const updateName = async () => {
@@ -176,7 +178,7 @@ const copyId = () => {
               density="compact"
               variant="outlined"
               hide-details
-              :error="errorIndex === index"
+              :error="errorIndex === true || errorIndex === index"
               :error-message="errorMessage"
               class="mb-2"
             />

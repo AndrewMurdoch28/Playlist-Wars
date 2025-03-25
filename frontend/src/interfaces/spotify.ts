@@ -1,3 +1,9 @@
+export enum RepeatState {
+  TRACK = "track",
+  CONTEXT = "context",
+  OFF = "off",
+}
+
 export interface PlayerState {
   disallows: { [key: string]: boolean }; // Map of actions that are disallowed (e.g., play, pause)
   context: any | null; // The context of the current playback (e.g., playlist, album, etc.)

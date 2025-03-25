@@ -85,6 +85,7 @@
     </div>
 
     <v-slider
+      v-show="!isMobile"
       v-model="spotifyStore.playerState.device.volume_percent"
       min="0"
       max="100"
@@ -108,17 +109,19 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
 import { useSpotifyStore } from "../stores/spotify";
-import axios from "axios";
+import { RepeatState } from "../interfaces/spotify";
 
 const spotifyStore = useSpotifyStore();
 
 const props = defineProps<{ hideDetails: boolean }>();
 
 const accessToken = ref<string | null>(null);
+const isMobile = ref<boolean>(false);
 
 let interval: NodeJS.Timeout;
 
 onMounted(() => {
+  isMobile.value = window.innerWidth <= 768;
   spotifyStore.readAccessToken().then((token: string | undefined) => {
     if (!token) {
       console.error("Undefined Access Token");
@@ -126,6 +129,7 @@ onMounted(() => {
     }
     accessToken.value = token;
     spotifyStore.refreshPlayerState();
+    spotifyStore.setRepeat(RepeatState.TRACK);
   });
 });
 
@@ -134,14 +138,18 @@ watch(
   () => {
     if (spotifyStore.playerState?.is_playing) {
       if (interval) clearInterval(interval);
-      interval = setInterval(() => {
-        if (
-          spotifyStore.playerState!.progress_ms <
-          spotifyStore.playerState!.item.duration_ms
-        ) {
-          spotifyStore.playerState!.progress_ms += 1000;
-        }
-      }, 1000);
+      
+        interval = setInterval(() => {
+          if (
+            spotifyStore.playerState!.progress_ms <
+            spotifyStore.playerState!.item.duration_ms
+          ) {
+            spotifyStore.playerState!.progress_ms += 1000;
+          } else {
+            setTimeout(spotifyStore.refreshPlayerState, 1000);
+          }
+        }, 1000);
+      
     } else {
       if (interval) clearInterval(interval);
     }

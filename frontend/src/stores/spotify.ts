@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { axiosApi } from "./axios";
 import axios from "axios";
 import { Track } from "../interfaces/game";
-import { PlayerState } from "../interfaces/spotify";
+import { PlayerState, RepeatState } from "../interfaces/spotify";
 
 export const useSpotifyStore = defineStore("spotify", () => {
   const accessToken = ref<string>();
@@ -17,16 +17,14 @@ export const useSpotifyStore = defineStore("spotify", () => {
   };
 
   const readPlaylists = async (playlistURLs: string[]) => {
-    const response = await axiosApi.post("/spotify/playlists", {
-      playlistURLs,
-    });
-    return response.data;
-  };
-
-  const playTrackFromUrl = async (url: string) => {
-    const response = await axiosApi.put("/spotify/playSong", {
-      url,
-    });
+    try {
+      const response = await axiosApi.post("/spotify/playlists", {
+        playlistURLs,
+      });
+      return response.data;
+    } catch (error) {
+      return { success: false, failedAtIndex: true };
+    }
   };
 
   const getAlbumCover = async (url: string) => {
@@ -44,6 +42,19 @@ export const useSpotifyStore = defineStore("spotify", () => {
       })
       .catch((error) => {
         console.error("Error fetching player state:", error);
+      });
+  };
+
+  const playTrack = async (url: string) => {
+    await axiosApi
+      .put("/spotify/playSong", {
+        url,
+      })
+      .then(() => {
+        setTimeout(refreshPlayerState, 1000);
+      })
+      .catch((error) => {
+        console.error("Error playing song:", error);
       });
   };
 
@@ -75,6 +86,19 @@ export const useSpotifyStore = defineStore("spotify", () => {
       )
       .then(() => {
         playerState.value!.device.volume_percent = newVolume;
+      })
+      .catch((error) => {
+        console.error("Error setting volume:", error);
+      });
+  };
+
+  const setRepeat = (state: RepeatState) => {
+    axios
+      .put(`https://api.spotify.com/v1/me/player/repeat?state=${state}`, null, {
+        headers: { Authorization: `Bearer ${accessToken.value}` },
+      })
+      .then(() => {
+        playerState.value!.repeat_state = state;
       })
       .catch((error) => {
         console.error("Error setting volume:", error);
@@ -194,11 +218,12 @@ export const useSpotifyStore = defineStore("spotify", () => {
     playerState,
     readAccessToken,
     readPlaylists,
-    playTrackFromUrl,
+    playTrack,
     getAlbumCover,
     refreshPlayerState,
     seek,
     setVolume,
+    setRepeat,
     nextTrack,
     previousTrack,
     togglePlayPause,

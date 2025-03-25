@@ -104,7 +104,7 @@ watch(
       gameStore.game?.activeTrack &&
       spotifyStore.playerState?.device.is_active
     ) {
-      spotifyStore.playTrackFromUrl(gameStore.game!.activeTrack!.url);
+      spotifyStore.playTrack(gameStore.game!.activeTrack!.url);
     }
   },
   { immediate: true }
@@ -345,6 +345,16 @@ const openSpotifyApp = () => {
       <v-card-title class="text-h6">Active Song Answer</v-card-title>
       <v-divider class="mb-2"></v-divider>
       <v-img :src="activeSongCoverImg" height="200"></v-img>
+      <v-btn
+        color="#344f91"
+        class="hide-print"
+        icon
+        small
+        style="position: absolute; top: 225px; right: 90px"
+        @click="searchSongYear(gameStore.game!.activeTrack!)"
+      >
+        <v-icon>mdi-magnify</v-icon>
+      </v-btn>
       <div style="display: flex; justify-content: center">
         <div>
           <div style="font-size: 1.5rem; font-weight: bolder">
@@ -357,15 +367,6 @@ const openSpotifyApp = () => {
             {{ gameStore.game?.activeTrack?.artist }}
           </div>
         </div>
-        <v-btn
-          color="#344f91"
-          class="hide-print"
-          icon
-          small
-          @click="searchSongYear(gameStore.game!.activeTrack!)"
-        >
-          <v-icon>mdi-magnify</v-icon>
-        </v-btn>
       </div>
       <v-divider class="my-2"></v-divider>
       <div
@@ -378,15 +379,15 @@ const openSpotifyApp = () => {
           flex-wrap: wrap;
         "
       >
-        <v-btn @click="apealVisible = true" color="error" variant="text"
+        <v-btn @click="apealVisible = true" color="error"
           >Apeal Release Year</v-btn
         >
-        <v-btn @click="gameStore.confirmSong" color="primary" variant="text"
+        <v-btn @click="gameStore.confirmSong" color="primary"
           >Confirm Release Year</v-btn
         >
       </div>
       <div v-else style="font-weight: bolder; font-size: 1.3rem">
-        Waiting on
+        Waiting for
         {{ gameStore.game!.players[gameStore.game!.currentPlayerId!].name }}'s
         Action
       </div>
@@ -399,6 +400,16 @@ const openSpotifyApp = () => {
       >
       <v-divider class="mb-2"></v-divider>
       <v-img :src="activeSongCoverImg" height="200"></v-img>
+      <v-btn
+        color="#344f91"
+        class="hide-print"
+        icon
+        small
+        style="position: absolute; top: 225px; right: 90px"
+        @click="searchSongYear(gameStore.game!.activeTrack!)"
+      >
+        <v-icon>mdi-magnify</v-icon>
+      </v-btn>
       <div style="display: flex; justify-content: center">
         <div>
           <div style="font-size: 1.5rem; font-weight: bolder">
@@ -411,15 +422,6 @@ const openSpotifyApp = () => {
             {{ gameStore.game?.activeTrack?.artist }}
           </div>
         </div>
-        <v-btn
-          color="#344f91"
-          class="hide-print"
-          icon
-          small
-          @click="searchSongYear(gameStore.game!.activeTrack!)"
-        >
-          <v-icon>mdi-magnify</v-icon>
-        </v-btn>
       </div>
       <v-form ref="apealForm" style="display: flex; justify-content: center">
         <v-text-field
@@ -442,12 +444,8 @@ const openSpotifyApp = () => {
           flex-wrap: wrap;
         "
       >
-        <v-btn @click="apealVisible = false" color="error" variant="text"
-          >Cancel Apeal</v-btn
-        >
-        <v-btn @click="apealSong" color="primary" variant="text"
-          >Confirm Apeal</v-btn
-        >
+        <v-btn @click="apealVisible = false" color="error">Cancel Apeal</v-btn>
+        <v-btn @click="apealSong" color="primary">Confirm Apeal</v-btn>
       </div>
     </v-card>
   </v-dialog>
@@ -456,6 +454,16 @@ const openSpotifyApp = () => {
       <v-card-title class="text-h6">Apeal Evaluation</v-card-title>
       <v-divider class="mb-2"></v-divider>
       <v-img :src="activeSongCoverImg" height="200"></v-img>
+      <v-btn
+        color="#344f91"
+        class="hide-print"
+        icon
+        small
+        style="position: absolute; top: 225px; right: 90px"
+        @click="searchSongYear(gameStore.game!.activeTrack!)"
+      >
+        <v-icon>mdi-magnify</v-icon>
+      </v-btn>
       <div style="display: flex; justify-content: center">
         <div>
           <div style="font-size: 1.5rem; font-weight: bolder">
@@ -468,16 +476,6 @@ const openSpotifyApp = () => {
             {{ gameStore.game?.activeTrack?.artist }}
           </div>
         </div>
-        <v-btn
-          color="#344f91"
-          class="hide-print"
-          icon
-          small
-          @click="searchSongYear(gameStore.game!.activeTrack!)"
-          style="position: absolute; right: 20%"
-        >
-          <v-icon>mdi-magnify</v-icon>
-        </v-btn>
       </div>
       <v-divider class="my-2"></v-divider>
       <v-row>
@@ -504,15 +502,23 @@ const openSpotifyApp = () => {
           flex-wrap: wrap;
         "
       >
-        <v-btn @click="actionApealSong(false)" color="error" variant="text">
+        <v-btn @click="actionApealSong(false)" color="error">
           Deny Apeal
         </v-btn>
-        <v-btn @click="actionApealSong(true)" color="success" variant="text">
+        <v-btn @click="actionApealSong(true)" color="success">
           Approve Apeal
         </v-btn>
       </div>
       <div v-else style="font-weight: bolder; font-size: 1.3rem">
-        Waiting for Other Players...
+        {{
+          `Waiting for ${gameStore.getPlayers
+            ?.filter(
+              (player) =>
+                !player.ready && player.id !== gameStore.getCurrent?.id
+            )
+            .map((player) => player.name)
+            .join(", ")} to action.`
+        }}
       </div>
     </v-card>
   </v-dialog>
@@ -570,15 +576,20 @@ const openSpotifyApp = () => {
           flex-wrap: wrap;
         "
       >
-        <v-btn @click="actionGuess(true)" color="success" variant="text">
+        <v-btn @click="actionGuess(true)" color="success">
           Guess is Correct
         </v-btn>
-        <v-btn @click="actionGuess(false)" color="error" variant="text">
+        <v-btn @click="actionGuess(false)" color="error">
           Guess is Incorrect
         </v-btn>
       </div>
       <div v-else style="font-weight: bolder; font-size: 1.3rem">
-        Waiting for Other Players...
+        {{
+          `Waiting for ${gameStore.getPlayers
+            ?.filter((player) => !player.ready)
+            .map((player) => player.name)
+            .join(", ")} to action.`
+        }}
       </div>
     </v-card>
   </v-dialog>
@@ -633,12 +644,22 @@ const openSpotifyApp = () => {
         (gameStore.countdownValue / gameStore.countdownLength) * 100
       "
     ></v-progress-linear> -->
-    <SpotifyPlayer v-show="spotifyPlayerVisible" :hideDetails="true"></SpotifyPlayer>
+    <SpotifyPlayer
+      v-show="spotifyPlayerVisible"
+      :hideDetails="true"
+    ></SpotifyPlayer>
     <v-card
       color="card"
       class="mb-1"
       style="display: flex; flex-direction: column; justify-content: center"
     >
+      <v-btn
+        v-if="spotifyStore.playerState?.device.is_active"
+        @click="spotifyStore.playTrack(gameStore.game!.activeTrack!.url)"
+        color="gray"
+        class="ma-2"
+        >Reload Song in Player</v-btn
+      >
       <v-btn
         v-if="!spotifyStore.playerState?.device.is_active"
         @click="openSpotifyApp"
@@ -651,7 +672,7 @@ const openSpotifyApp = () => {
           {{
             gameStore.getMe?.id === gameStore.getCurrent?.id
               ? `Listen to song and select the correct position in the timeline.`
-              : `${gameStore.getCurrent?.name} is placing the song in the timeline.`
+              : `Waiting for ${gameStore.getCurrent?.name} to place song in the timeline.`
           }}
         </div>
       </div>
@@ -661,7 +682,13 @@ const openSpotifyApp = () => {
             gameStore.getMe?.id === gameStore.getCurrent?.id ||
             gameStore.getMe?.ready ||
             gameStore.getMe?.tokens === 0
-              ? "Waiting for players to place tokens."
+              ? `Waiting for ${gameStore.getPlayers
+                  ?.filter(
+                    (player) =>
+                      !player.ready && player.id !== gameStore.getCurrent?.id
+                  )
+                  .map((player) => player.name)
+                  .join(", ")} to place tokens.`
               : "Place tokens to try and steal!"
           }}
         </div>
@@ -670,7 +697,10 @@ const openSpotifyApp = () => {
         <div class="pa-2 text-h5 font-weight-bold">
           {{
             gameStore.getMe?.ready
-              ? "Waiting on other players."
+              ? `Waiting for ${gameStore.getPlayers
+                  ?.filter((player) => !player.ready)
+                  .map((player) => player.name)
+                  .join(", ")} to guess song.`
               : "Guess the song to win a token!"
           }}
         </div>
@@ -717,19 +747,19 @@ const openSpotifyApp = () => {
       >
       <div style="display: flex">
         <v-btn
-          v-if="gameStore.getMe!.tokens >= gameStore.game!.tokensToBuy"
+          :disabled="gameStore.getMe!.tokens < gameStore.game!.tokensToBuy"
           @click="gameStore.buySong()"
           class="ma-2"
           color="primary"
           >Buy Song {{ `(Cost: ${gameStore.game?.tokensToBuy} tokens)` }}</v-btn
         >
-        <!-- <v-btn
-          v-if="gameStore.getMe!.tokens >= 1 && gameStore.game?.turnState === TurnState.PlaceTimelineEntry"
+        <v-btn
+          :disabled="gameStore.getMe!.tokens === 0 || gameStore.game?.turnState !== TurnState.PlaceTimelineEntry || gameStore.getCurrent?.id !== gameStore.getMe?.id"
           @click="gameStore.buyAnotherSong()"
           class="ma-2"
           color="primary"
-          >Change Song (Cost 1 Token)</v-btn
-        > -->
+          >Change Song (Cost: 1 Token)</v-btn
+        >
       </div>
     </v-card>
     <v-card color="card" class="mb-1">
@@ -824,9 +854,10 @@ const openSpotifyApp = () => {
             v-if="
               gameStore.showAddBtns &&
               (index !== activeTrackIndex) &&
-              (index !== activeTrackIndex! - 1) && !gameStore.getCurrent?.timelineTokens.some((token) => token.position === index + 1)
+              (index !== activeTrackIndex! - 1) && !gameStore.getCurrent?.timelineTokens.some((token) => token.position === index) &&
+              gameStore.getCurrent?.timeline[index]?.releaseYear !== gameStore.getCurrent?.timeline[index + 1]?.releaseYear
             "
-            @click="handleAddBtn(index + 1)"
+            @click="handleAddBtn(index)"
             color="primary"
           >
             <span style="font-size: 24px; line-height: 1">+</span>
@@ -834,7 +865,7 @@ const openSpotifyApp = () => {
           <div
             v-if="
               gameStore.getCurrent?.timelineTokens.some(
-                (token) => token.position === index + 1
+                (token) => token.position === index
               )
             "
           >
@@ -850,7 +881,7 @@ const openSpotifyApp = () => {
                 {{
                   gameStore.game!.players[
                     gameStore.getCurrent?.timelineTokens.find(
-                      (token) => token.position === index + 1
+                      (token) => token.position === index
                     )!.playerId
                   ].name
                 }}
