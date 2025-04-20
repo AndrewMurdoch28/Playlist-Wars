@@ -99,12 +99,10 @@ export const useGameStore = defineStore("game", () => {
       countdownValue.value = value;
       countdownVisible.value = showDialog;
       countdownMessage.value = message;
-      console.log("startedTimer", countdownValue.value);
     }
   );
 
   socket.on("timerUpdated", (value: number) => {
-    console.log("timerUpdated", value);
     countdownValue.value = value;
   });
 
@@ -123,7 +121,6 @@ export const useGameStore = defineStore("game", () => {
   const alertCallback = ref<Function>(() => {});
 
   socket.on("alertMessage", (message: string, type: AlertType) => {
-    console.log("alert message", message, type);
     alertMessage.value.push(message);
     alertType.value?.push(type);
     alertCallback.value = () => {};

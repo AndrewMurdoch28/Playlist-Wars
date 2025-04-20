@@ -22,9 +22,7 @@ onMounted(() => {
     localStorage.setItem("access_token", access_token as string);
     localStorage.setItem("refresh_token", refresh_token as string);
     localStorage.setItem("expires_in", expires_in as string);
-
-    console.log("access_token", access_token)
-
+    
     router.replace({ path: "/menu" });
   }
 });

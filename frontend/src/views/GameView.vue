@@ -857,7 +857,7 @@ const openSpotifyApp = () => {
               (index !== activeTrackIndex! - 1) && !gameStore.getCurrent?.timelineTokens.some((token) => token.position === index) &&
               gameStore.getCurrent?.timeline[index]?.releaseYear !== gameStore.getCurrent?.timeline[index + 1]?.releaseYear
             "
-            @click="handleAddBtn(index)"
+            @click="handleAddBtn(index + 1)"
             color="primary"
           >
             <span style="font-size: 24px; line-height: 1">+</span>
@@ -865,7 +865,7 @@ const openSpotifyApp = () => {
           <div
             v-if="
               gameStore.getCurrent?.timelineTokens.some(
-                (token) => token.position === index
+                (token) => token.position === index + 1
               )
             "
           >
@@ -881,7 +881,7 @@ const openSpotifyApp = () => {
                 {{
                   gameStore.game!.players[
                     gameStore.getCurrent?.timelineTokens.find(
-                      (token) => token.position === index
+                      (token) => token.position === index + 1
                     )!.playerId
                   ].name
                 }}

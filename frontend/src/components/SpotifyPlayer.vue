@@ -1,7 +1,7 @@
 <template>
   <template
     v-if="
-      !spotifyStore.playerState || !spotifyStore.playerState.device.is_active
+      !spotifyStore.playerState
     "
   >
     <v-alert class="mb-1" width="100vw" max-width="450" type="warning">
@@ -138,18 +138,16 @@ watch(
   () => {
     if (spotifyStore.playerState?.is_playing) {
       if (interval) clearInterval(interval);
-      
-        interval = setInterval(() => {
-          if (
-            spotifyStore.playerState!.progress_ms <
-            spotifyStore.playerState!.item.duration_ms
-          ) {
-            spotifyStore.playerState!.progress_ms += 1000;
-          } else {
-            setTimeout(spotifyStore.refreshPlayerState, 1000);
-          }
-        }, 1000);
-      
+      interval = setInterval(() => {
+        if (
+          spotifyStore.playerState!.progress_ms <
+          spotifyStore.playerState!.item.duration_ms
+        ) {
+          spotifyStore.playerState!.progress_ms += 1000;
+        } else {
+          setTimeout(spotifyStore.refreshPlayerState, 1000);
+        }
+      }, 1000);
     } else {
       if (interval) clearInterval(interval);
     }
